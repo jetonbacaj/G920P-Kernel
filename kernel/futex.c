@@ -1643,6 +1643,7 @@ out_put_key1:
 out:
 	if (pi_state != NULL)
 		free_pi_state(pi_state);
+	wake_up_q(&wake_q);
 	return ret ? ret : task_count;
 }
 
