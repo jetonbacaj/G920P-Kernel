@@ -1,3 +1,6 @@
+# Enable Strict Aliasing Optimizations
+CFLAGS_KERNEL += -fstrict-aliasing
+
 obj-$(CONFIG_PM_DEVFREQ)	+= devfreq.o
 obj-$(CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND)	+= governor_simpleondemand.o
 obj-$(CONFIG_DEVFREQ_GOV_SIMPLE_EXYNOS)	+= governor_simpleexynos.o
