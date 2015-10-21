@@ -1,4 +1,7 @@
-CFLAGS_dm_cpu_hotplug.o := $(KBUILD_CFLAGS) -Wno-declaration-after-statement
+CFLAGS_dm_cpu_hotplug.o := $(KBUILD_CFLAGS) -Wno-declaration-after-statement -fstrict-aliasing
+
+# Enable Strict Aliasing Optimizations
+CFLAGS_KERNEL += -fstrict-aliasing
 
 # CPUfreq core
 obj-$(CONFIG_CPU_FREQ)			+= cpufreq.o cpu_load_metric.o

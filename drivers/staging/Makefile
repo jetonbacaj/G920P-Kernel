@@ -1,5 +1,8 @@
 # Makefile for staging directory
 
+# Enable Strict Aliasing Optimizations
+CFLAGS_KERNEL += -fstrict-aliasing
+
 # fix for build system bug...
 obj-$(CONFIG_STAGING)		+= staging.o
 
