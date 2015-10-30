@@ -41,6 +41,7 @@ obj-$(CONFIG_CPU_FREQ_GOV_SMARTMAX)	+= cpufreq_smartmax.o
 obj-$(CONFIG_CPU_FREQ_GOV_SMARTMAX_EPS)	+= cpufreq_smartmax_eps.o
 obj-$(CONFIG_CPU_FREQ_GOV_INTEREXTREM)	+= cpufreq_interextrem.o
 obj-$(CONFIG_CPU_FREQ_GOV_NEXUS)	    += cpufreq_nexus.o
+obj-$(CONFIG_CPU_FREQ_GOV_CAFACTIVE)	+= cpufreq_cafactive.o
 obj-$(CONFIG_CPU_FREQ_GOV_COMMON)		+= cpufreq_governor.o
 
 # CPUfreq cross-arch helpers
