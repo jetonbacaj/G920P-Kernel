@@ -48,6 +48,12 @@
 #include "sched.h"
 #include "tune.h"
 
+#ifndef TJK_HMP
+// TJK: resolve undefined sysctl symbols
+unsigned int __read_mostly sysctl_sched_wake_to_idle = 0;
+#endif
+
+
 /*
  * Targeted preemption latency for CPU-bound tasks:
  * (default: 6ms * (1 + ilog(ncpus)), units: nanoseconds)
@@ -1386,6 +1392,9 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
 	unsigned long scale_freq = arch_scale_freq_capacity(NULL, cpu);
 	unsigned long scale_cpu = arch_scale_cpu_capacity(NULL, cpu);
 
+#define TK_PERIOD_SHIFT 10
+#define TK_PERIOD (1<<TK_PERIOD_SHIFT)
+
 	trace_sched_contrib_scale_f(cpu, scale_freq, scale_cpu);
 
 	delta = now - sa->last_runnable_update;
@@ -1402,14 +1411,14 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
 	 * Use 1024ns as the unit of measurement since it's a reasonable
 	 * approximation of 1us and fast to compute.
 	 */
-	delta >>= 10;
+	delta >>= TK_PERIOD_SHIFT;
 	if (!delta)
 		return 0;
 	sa->last_runnable_update = now;
 
 	/* delta_w is the amount already accumulated against our next period */
-	delta_w = sa->avg_period % 1024;
-	if (delta + delta_w >= 1024) {
+	delta_w = sa->avg_period % TK_PERIOD;
+	if (delta + delta_w >= TK_PERIOD) {
 		/* period roll-over */
 		decayed = 1;
 
@@ -1418,7 +1427,7 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
 		 * out how much from delta we need to complete the current
 		 * period and accrue it.
 		 */
-		delta_w = 1024 - delta_w;
+		delta_w = TK_PERIOD - delta_w;
 		scaled_delta_w = (delta_w * scale_freq) >> SCHED_CAPACITY_SHIFT;
 
 		if (runnable)
@@ -1434,9 +1443,9 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
 		delta -= delta_w;
 
 		/* Figure out how many additional periods this update spans */
-		periods = delta / 1024;
-		delta %= 1024;
-		/* decay the load we have accumulated so far */
+		periods = delta / TK_PERIOD;
+		delta %= TK_PERIOD;
+
 		sa->runnable_avg_sum = decay_load(sa->runnable_avg_sum,
 						  periods + 1);
 		sa->running_avg_sum = decay_load(sa->running_avg_sum,
@@ -3120,7 +3129,7 @@ static inline void hrtick_update(struct rq *rq)
 }
 #endif
 
-static unsigned int capacity_margin = 1280; /* ~20% margin */
+unsigned int __read_mostly sysctl_sched_capacity_margin = 1280; /* ~20% margin */
 
 static bool cpu_overutilized(int cpu);
 static unsigned long get_cpu_usage(int cpu);
@@ -3193,7 +3202,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 			unsigned long req_cap =
 				get_boosted_cpu_usage(cpu_of(rq));
 
-			req_cap = req_cap * capacity_margin
+			req_cap = req_cap * sysctl_sched_capacity_margin
 					>> SCHED_CAPACITY_SHIFT;
 			cpufreq_sched_set_cap(cpu_of(rq), req_cap);
 		}
@@ -3275,7 +3284,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 				get_boosted_cpu_usage(cpu_of(rq));
 
 			if (rq->cfs.nr_running) {
-				req_cap = req_cap * capacity_margin
+				req_cap = req_cap * sysctl_sched_capacity_margin
 						>> SCHED_CAPACITY_SHIFT;
 				cpufreq_sched_set_cap(cpu_of(rq), req_cap);
 			} else {
@@ -3703,7 +3712,7 @@ static int find_new_capacity(struct energy_env *eenv,
 static bool cpu_overutilized(int cpu)
 {
 	return (capacity_of(cpu) * 1024) <
-				(get_cpu_usage(cpu) * capacity_margin);
+				(get_cpu_usage(cpu) * sysctl_sched_capacity_margin);
 }
 
 static int group_idle_state(struct sched_group *sg)
@@ -4127,10 +4136,13 @@ boosted_task_utilization(struct task_struct *task)
 static inline bool __task_fits(struct task_struct *p, int cpu, int usage)
 {
 	unsigned long capacity = capacity_of(cpu);
+	int orig_usage = usage;
 
 	usage += boosted_task_utilization(p);
 
-	return (capacity * 1024) > (usage * capacity_margin);
+	trace_sched_task_fits(p, cpu, orig_usage, usage, task_utilization(p), capacity, sysctl_sched_capacity_margin);
+
+	return (capacity * 1024) > (usage * sysctl_sched_capacity_margin);
 }
 
 static inline bool task_fits_capacity(struct task_struct *p, int cpu)
@@ -4141,7 +4153,7 @@ static inline bool task_fits_capacity(struct task_struct *p, int cpu)
 	if (capacity == max_capacity)
 		return true;
 
-	if (capacity * capacity_margin > max_capacity * 1024)
+	if (capacity * sysctl_sched_capacity_margin > max_capacity * 1024)
 		return true;
 
 	return __task_fits(p, cpu, 0);
@@ -4215,7 +4227,7 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
 	struct sched_group *fit_group = NULL, *spare_group = NULL;
 	unsigned long min_load = ULONG_MAX, this_load = 0;
 	unsigned long fit_capacity = ULONG_MAX;
-	unsigned long max_spare_capacity = capacity_margin - SCHED_LOAD_SCALE;
+	unsigned long max_spare_capacity = sysctl_sched_capacity_margin - SCHED_LOAD_SCALE;
 	int load_idx = sd->forkexec_idx;
 	int imbalance = 100 + (sd->imbalance_pct-100)/2;
 
@@ -5843,7 +5855,7 @@ group_is_overloaded(struct lb_env *env, struct sg_lb_stats *sgs)
 static inline bool
 group_smaller_cpu_capacity(struct sched_group *sg, struct sched_group *ref)
 {
-	return sg->sgc->max_capacity + capacity_margin - SCHED_LOAD_SCALE <
+	return sg->sgc->max_capacity + sysctl_sched_capacity_margin - SCHED_LOAD_SCALE <
 							ref->sgc->max_capacity;
 }
 
@@ -6666,7 +6678,7 @@ more_balance:
 			unsigned long req_cap =
 				get_boosted_cpu_usage(env.src_cpu);
 
-			req_cap = req_cap * capacity_margin
+			req_cap = req_cap * sysctl_sched_capacity_margin
 					>> SCHED_CAPACITY_SHIFT;
 			cpufreq_sched_set_cap(env.src_cpu, req_cap);
 		}
@@ -6694,7 +6706,7 @@ more_balance:
 				unsigned long req_cap =
 					get_boosted_cpu_usage(env.dst_cpu);
 
-				req_cap = req_cap * capacity_margin
+				req_cap = req_cap * sysctl_sched_capacity_margin
 						>> SCHED_CAPACITY_SHIFT;
 				cpufreq_sched_set_cap(env.dst_cpu, req_cap);
 			}
@@ -7070,7 +7082,7 @@ static int active_load_balance_cpu_stop(void *data)
 				unsigned long req_cap =
 					get_boosted_cpu_usage(env.src_cpu);
 
-				req_cap = req_cap * capacity_margin
+				req_cap = req_cap * sysctl_sched_capacity_margin
 						>> SCHED_CAPACITY_SHIFT;
 				cpufreq_sched_set_cap(env.src_cpu, req_cap);
 			}
@@ -7096,7 +7108,7 @@ out_unlock:
 			unsigned long req_cap =
 				get_boosted_cpu_usage(target_cpu);
 
-			req_cap = req_cap * capacity_margin
+			req_cap = req_cap * sysctl_sched_capacity_margin
 					>> SCHED_CAPACITY_SHIFT;
 			cpufreq_sched_set_cap(target_cpu, req_cap);
 		}
@@ -7598,7 +7610,7 @@ static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
 
 		if (capacity_curr < capacity_orig &&
 		    (capacity_curr * SCHED_LOAD_SCALE) <
-		    (get_cpu_usage(cpu) * capacity_margin))
+		    (get_cpu_usage(cpu) * sysctl_sched_capacity_margin))
 			cpufreq_sched_set_cap(cpu, capacity_orig);
 	}
 }
