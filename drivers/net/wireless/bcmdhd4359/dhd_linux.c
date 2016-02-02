@@ -207,6 +207,11 @@ static u32 vendor_oui = CONFIG_DHD_SET_RANDOM_MAC_VAL;
 
 #include <wl_android.h>
 
+#include <linux/moduleparam.h>
+
+static int wl_divide = 3;
+module_param(wl_divide, int, 0644);
+
 /* Maximum STA per radio */
 #define DHD_MAX_STA     32
 
