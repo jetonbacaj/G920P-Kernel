@@ -1091,9 +1091,6 @@ static int on_run(void *data)
 				exe_cmd = diagnose_condition();
 
 		if (exynos_dm_hotplug_disabled()) {
-#ifdef DM_HOTPLUG_DEBUG
-			pr_info("dm_hotplug disable = %d\n", exynos_dm_hotplug_disabled());
-#endif
 			goto sleep;
 		}
 
