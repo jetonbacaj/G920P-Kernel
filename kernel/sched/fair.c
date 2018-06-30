@@ -3758,7 +3758,7 @@ static DEFINE_RAW_SPINLOCK(hmp_sysfs_lock);
 
 static struct hmp_domain *hmp_domain_cache[NR_CPUS] = { };
 
-#define BOOT_BOOST_DURATION 40000000 /* microseconds */
+#define BOOT_BOOST_DURATION 20000000 /* microseconds */
 #define YIELD_CORRECTION_TIME 10000000 /* nanoseconds */
 
 #ifdef CONFIG_SCHED_HMP_PRIO_FILTER
