@@ -154,6 +154,7 @@ void gpu_destroy_context(void *ctx)
 #ifdef CONFIG_SCHED_HMP
 		int i, policy_count;
 		const struct kbase_pm_policy *const *policy_list;
+#endif
 		struct exynos_context *platform;
 		platform = (struct exynos_context *) kbdev->platform_context;
 #endif
@@ -265,6 +266,7 @@ int gpu_vendor_dispatch(struct kbase_context *kctx, void * const args, u32 args_
 #ifdef CONFIG_SCHED_HMP
 			int i, policy_count;
 			const struct kbase_pm_policy *const *policy_list;
+#endif
 			struct exynos_context *platform;
 			platform = (struct exynos_context *) kbdev->platform_context;
 #endif
@@ -305,6 +307,7 @@ int gpu_vendor_dispatch(struct kbase_context *kctx, void * const args, u32 args_
 #ifdef CONFIG_SCHED_HMP
 			int i, policy_count;
 			const struct kbase_pm_policy *const *policy_list;
+#endif
 			struct exynos_context *platform;
 			platform = (struct exynos_context *) kbdev->platform_context;
 #endif /* CONFIG_SCHED_HMP */
