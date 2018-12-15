@@ -677,18 +677,19 @@ static void kbase_debug_copy_finish(struct kbase_jd_atom *katom)
 
 	kbase_gpu_vm_lock(katom->kctx);
 	for (i = 0; i < nr; i++) {
-		int p;
 		struct kbase_mem_phy_alloc *gpu_alloc = buffers[i].gpu_alloc;
 
-		if (!buffers[i].pages)
-			break;
-		for (p = 0; p < buffers[i].nr_pages; p++) {
-			struct page *pg = buffers[i].pages[p];
+		if (buffers[i].pages) {
+			int p;
 
-			if (pg)
-				put_page(pg);
+			for (p = 0; p < buffers[i].nr_pages; p++) {
+				struct page *pg = buffers[i].pages[p];
+
+				if (pg)
+					put_page(pg);
+			}
+			kfree(buffers[i].pages);
 		}
-		kfree(buffers[i].pages);
 		if (gpu_alloc) {
 			switch (gpu_alloc->type) {
 			case KBASE_MEM_TYPE_IMPORTED_USER_BUF:
