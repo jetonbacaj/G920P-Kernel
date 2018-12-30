@@ -2,6 +2,7 @@
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/cpufreq.h>
+#include <linux/cpufreq_kt.h>
 #include <linux/cpu.h>
 #include <linux/jiffies.h>
 #include <linux/kernel_stat.h>
@@ -121,10 +122,19 @@ static int dm_hotplug_disable = 0;
 
 static int exynos_dm_hotplug_disabled(void)
 {
-	return dm_hotplug_disable;
+	return dm_hotplug_disable || (ktoonservative_is_active && ktoonservative_hp_active);
 }
+#ifdef CONFIG_ARGOS
+void exynos_dm_hotplug_enable(void)
+#else
 static void exynos_dm_hotplug_enable(void)
+#endif
 {
+	if(!(ktoonservative_is_active && ktoonservative_hp_active)) {
+		dm_hotplug_disable = 1;
+		return;
+	}
+	
 	mutex_lock(&dm_hotplug_lock);
 	if (!exynos_dm_hotplug_disabled()) {
 		pr_warn("%s: dynamic hotplug already enabled\n",
@@ -138,7 +148,11 @@ static void exynos_dm_hotplug_enable(void)
 	mutex_unlock(&dm_hotplug_lock);
 }
 
+#ifdef CONFIG_ARGOS
+void exynos_dm_hotplug_disable(void)
+#else
 static void exynos_dm_hotplug_disable(void)
+#endif
 {
 	mutex_lock(&dm_hotplug_lock);
 	dm_hotplug_disable++;
@@ -632,7 +646,9 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 						}
 					}
 				} else {
-					for (i = 1; i < NR_CLUST0_CPUS; i++) { 
+					for (i = 1; i < setup_max_cpus; i++) {
+						if (do_hotplug_out && i >= NR_CLUST0_CPUS)
+							goto blk_out;
 						if (!cpu_online(i)) {
 							ret = cpu_up(i);
 							if (ret)

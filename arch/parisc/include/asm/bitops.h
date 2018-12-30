@@ -15,6 +15,11 @@
  * for a detailed description of the functions please refer
  * to include/asm-i386/bitops.h or kerneldoc
  */
+#if __BITS_PER_LONG == 64
+#define SHIFT_PER_LONG 6
+#else
+#define SHIFT_PER_LONG 5
+#endif
 
 #define CHOP_SHIFTCOUNT(x) (((unsigned long) (x)) & (BITS_PER_LONG - 1))
 

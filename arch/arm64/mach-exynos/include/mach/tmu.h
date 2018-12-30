@@ -53,6 +53,7 @@
 #define ISP_TH_TEMP4		105
 #define ISP_TH_TEMP5		110
 
+extern unsigned int cus_thermal_throttle[];
 enum isp_noti_state_t {
 	ISP_NORMAL = 0,
 	ISP_COLD,

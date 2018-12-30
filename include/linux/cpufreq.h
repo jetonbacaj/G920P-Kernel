@@ -42,6 +42,8 @@
 int cpufreq_register_notifier(struct notifier_block *nb, unsigned int list);
 int cpufreq_unregister_notifier(struct notifier_block *nb, unsigned int list);
 extern void disable_cpufreq(void);
+extern int fingerprint_booster, should_boost_fingerprint;
+extern void boost_fingerprint_cpu(void);
 
 /*
  * Governor specific info that can be passed to modules that subscribe
@@ -421,6 +423,9 @@ extern struct cpufreq_governor cpufreq_gov_interactive;
 #elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_NEXUS)
 extern struct cpufreq_governor cpufreq_gov_nexus;
 #define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_nexus)
+#elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_KTOONSERVATIVE)
+extern struct cpufreq_governor cpufreq_gov_ktoonservative;
+#define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_ktoonservative)
 #endif
 
 /*********************************************************************

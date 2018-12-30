@@ -15,6 +15,9 @@
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/cpufreq.h>
+#include <linux/cpufreq_kt.h>
+
+#include <mach/tmu.h>
 
 /*********************************************************************
  *                     FREQUENCY TABLE HELPERS                       *
@@ -96,6 +99,8 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
 				   unsigned int relation,
 				   unsigned int *index)
 {
+	struct cpufreq_policy *policy_0 = cpufreq_cpu_get(0);
+	
 	struct cpufreq_frequency_table optimal = {
 		.index = ~0,
 		.frequency = 0,
@@ -104,7 +109,48 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
 		.index = ~0,
 		.frequency = 0,
 	};
-	unsigned int i, diff;
+	unsigned int i;
+	//pr_info("MY CPUFREQ >>> Should apply min freq for cpu: %d is %d\n", policy->cpu, (policy->cpu >= 4 && !(check_small_cores_online() && policy_0->cur == policy_0->max)));
+	pr_info("MY MAX >>> Max MHZ for CPU %d is %d\n", policy->cpu, policy->max);
+	if(policy->cpu >= 4 && !(check_small_cores_online() && policy_0->cur == policy_0->max) && favor_small_cores) {
+		if(policy_0->max > policy->min) {
+			switch(favor_small_cores) {
+				case 1:
+					target_freq = policy->min;
+					break;
+				
+				case 2:
+					target_freq = policy_0->cur;
+					break;
+			}
+			//target_freq = policy_0->cur;
+			relation = CPUFREQ_RELATION_H;
+			pr_info("MY CPUFREQ >>> target: %d\n", target_freq);
+		}
+	}
+	
+	if(cus_thermal_throttle[0] && cus_thermal_throttle[1] && cus_thermal_throttle[4] && cus_thermal_throttle[5]) {
+		
+		if(!is_cus_thermal_throttling) {
+			is_cus_thermal_throttling = 1;
+		}
+		switch(policy->cpu) {
+			case 0:
+				if(target_freq > cus_thermal_throttle[4]) {
+					target_freq = cus_thermal_throttle[4];
+				}
+				break;
+			case 4:
+				if(target_freq > cus_thermal_throttle[5]) {
+					target_freq = cus_thermal_throttle[5];
+				}
+				break;
+		}
+	} else {
+		if(is_cus_thermal_throttling) {
+			is_cus_thermal_throttling = 0;
+		}		
+	}
 
 	pr_debug("request for target %u kHz (relation: %u) for cpu %u\n",
 					target_freq, relation, policy->cpu);
@@ -131,7 +177,7 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
 		}
 		switch (relation) {
 		case CPUFREQ_RELATION_H:
-			if (freq < target_freq) {
+			if (freq <= target_freq) {
 				if (freq >= optimal.frequency) {
 					optimal.frequency = freq;
 					optimal.index = i;
@@ -144,7 +190,7 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
 			}
 			break;
 		case CPUFREQ_RELATION_L:
-			if (freq > target_freq) {
+			if (freq >= target_freq) {
 				if (freq <= optimal.frequency) {
 					optimal.frequency = freq;
 					optimal.index = i;
@@ -156,8 +202,8 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
 				}
 			}
 			break;
-		case CPUFREQ_RELATION_C:
-			diff = abs(freq - target_freq);
+		case CPUFREQ_RELATION_C: ;
+			unsigned int diff = abs(freq - target_freq);
 			if (diff < optimal.frequency ||
 			    (diff == optimal.frequency &&
 			     freq > table[optimal.index].frequency)) {
