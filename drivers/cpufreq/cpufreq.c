@@ -52,14 +52,15 @@ int favor_small_cores = 0;
 int fingerprint_booster = 1, /* fingerprint_cl_0 = 1500000, fingerprint_cl_1 = 2100000, */ should_boost_fingerprint;
 unsigned int cus_thermal_throttle[] = {0, 0, 55, 50, 1000000, 1300000, 0, 0}; //Values are: user enabled[0], should throttle[1], start temp[2], stop temp[3], max freq_cl0[4], max freq_cl1[5], core shutdown[6], should shutdown[7]
 
-void boost_fingerprint_cpu(void) {
-	int cpu;
-	for(cpu = 0; cpu < 8; cpu++) {
+/*void boost_fingerprint_cpu(void) {
+	int cpu = 0;
+	while(cpu < 8) {
 		if(!cpu_online(cpu)) {
 			cpu_up(cpu);
 		}
+		++cpu;
 	}	
-}
+} */
 
 struct hotplug_data {
 	struct work_struct hotplug_work;

@@ -24,6 +24,9 @@ extern void ktoonservative_boostpulse(bool boost_for_button);
 extern void ktoonservative_screen_is_on(bool state, int cpu);
 extern void cpufreq_screen_is_on(bool state);
 
+//Battery mhz control
+extern bool should_apply_bat_mhz;
+extern unsigned int cl_0_batt_mhz, cl_1_batt_mhz;
 extern bool check_small_cores_online(void),
 			is_cus_thermal_throttling;
 			

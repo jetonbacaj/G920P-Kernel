@@ -246,6 +246,8 @@ struct sec_battery_info {
 	int stability_test;
 	int eng_not_full_status;
 
+	bool skip_chg_temp_check;
+	bool skip_wpc_temp_check;
 #if defined(CONFIG_BATTERY_SWELLING_SELF_DISCHARGING)
 	bool factory_self_discharging_mode_on;
 	bool force_discharging;
@@ -321,6 +323,10 @@ ssize_t sec_bat_store_attrs(struct device *dev,
 
 enum {
 	BATT_RESET_SOC = 0,
+	BATT_LEV_START,
+	BATT_LEV_STOP,
+	BATT_FREQ_CL0,
+	BATT_FREQ_CL1,
 	BATT_READ_RAW_SOC,
 	BATT_READ_ADJ_SOC,
 	BATT_TYPE,

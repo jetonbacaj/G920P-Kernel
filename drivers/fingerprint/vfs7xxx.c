@@ -45,6 +45,7 @@
 #include <linux/gpio.h>
 #include <linux/i2c/twl.h>
 #include <linux/wait.h>
+#include <linux/cpufreq.h>
 #include <asm/uaccess.h>
 #include <linux/irq.h>
 
@@ -71,14 +72,13 @@
 #include <linux/amba/bus.h>
 #include <linux/amba/pl330.h>
 #if defined(CONFIG_SECURE_OS_BOOSTER_API)
-#if defined(CONFIG_SOC_EXYNOS8890)
-#include <soc/samsung/secos_booster.h>
-#else
 #include <mach/secos_booster.h>
 #endif
-#endif
 #include <mach/bts.h>
+#ifdef ENABLE_SENSORS_FPRINT_SECURE
 #include <linux/smc.h>
+#endif
+#include <linux/sysfs.h>
 
 struct sec_spi_info {
 	int		port;
@@ -159,13 +159,7 @@ struct vfsspi_device_data {
 	unsigned int ocp_en;
 	unsigned int ldo_pin; /* Ldo 3.3V GPIO pin number */
 	unsigned int ldo_pin2; /* Ldo 1.8V GPIO pin number */
-#ifndef ENABLE_SENSORS_FPRINT_SECURE
-#ifdef CONFIG_SOC_EXYNOS8890
-	/* set cs pin in fp driver, use only Exynos8890 */
-	/* for use auto cs mode with dualization fp sensor */
-	unsigned int cs_gpio;
-#endif
-#endif
+
 #ifdef CONFIG_SENSORS_FINGERPRINT_DUALIZATION
 	unsigned int vendor_pin; /* For checking vendor */
 #endif
@@ -1042,11 +1036,14 @@ static long vfsspi_ioctl(struct file *filp, unsigned int cmd,
 			return -EFAULT;
 		}
 		if (onoff) {
-			u8 retry_cnt = 0;
-			pr_info("%s VFSSPI_IOCTL_CPU_SPEEDUP ON:%d, retry: %d\n",
-				__func__, onoff, retry_cnt);
+			//u8 retry_cnt = 0;
+			//pr_info("MY FP BOOST >>> Begin fingerprint boosting");
+			should_boost_fingerprint = 1;
+			//boost_fingerprint_cpu();
+			/* pr_info("%s VFSSPI_IOCTL_CPU_SPEEDUP ON:%d, retry: %d\n",
+				__func__, onoff, retry_cnt); */
 #if defined(CONFIG_SECURE_OS_BOOSTER_API)
-			do {
+			/* do {
 				ret_val = secos_booster_start(onoff - 1);
 				retry_cnt++;
 				if (ret_val) {
@@ -1055,15 +1052,17 @@ static long vfsspi_ioctl(struct file *filp, unsigned int cmd,
 					if (retry_cnt < 7)
 						usleep_range(500, 510);
 				}
-			} while (ret_val && retry_cnt < 7);
+			} while (ret_val && retry_cnt < 7); */
 #endif
 		} else {
-			pr_info("%s VFSSPI_IOCTL_CPU_SPEEDUP OFF\n", __func__);
+			//pr_info("MY FP BOOST >>> End fingerprint boosting");
+			should_boost_fingerprint = 0;
+			//pr_info("%s VFSSPI_IOCTL_CPU_SPEEDUP OFF\n", __func__);
 #if defined(CONFIG_SECURE_OS_BOOSTER_API)
-			ret_val = secos_booster_stop();
+			/* ret_val = secos_booster_stop();
 			if (ret_val)
 				pr_err("%s: booster stop failed. (%d)\n"
-					, __func__, ret_val);
+					, __func__, ret_val); */
 #endif
 		}
 		break;

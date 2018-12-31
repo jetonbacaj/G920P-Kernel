@@ -43,7 +43,7 @@ int cpufreq_register_notifier(struct notifier_block *nb, unsigned int list);
 int cpufreq_unregister_notifier(struct notifier_block *nb, unsigned int list);
 extern void disable_cpufreq(void);
 extern int fingerprint_booster, should_boost_fingerprint;
-extern void boost_fingerprint_cpu(void);
+//extern void boost_fingerprint_cpu(void);
 
 /*
  * Governor specific info that can be passed to modules that subscribe

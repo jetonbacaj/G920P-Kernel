@@ -540,6 +540,7 @@ struct ssp_data {
 	int pressure_type;
 
 	bool debug_enable;
+	atomic_t int_gyro_enable;
 	int gyro_lib_state;
 	char sensor_state[SENSOR_MAX + 1];
 };

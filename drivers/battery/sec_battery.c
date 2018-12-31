@@ -11,7 +11,7 @@
  */
 #include <linux/battery/sec_battery.h>
 #include <linux/sec_debug.h>
-
+#include <linux/cpufreq_kt.h>
 #include <linux/moduleparam.h>
 
 static int wl_polling = 10;
@@ -19,6 +19,9 @@ module_param(wl_polling, int, 0644);
 
 const char *charger_chip_name;
 
+bool should_apply_bat_mhz;
+unsigned int cl_0_batt_mhz = 900000, cl_1_batt_mhz = 1000000;
+int bat_start_lvl = 20, bat_stop_lvl = 30;
 bool sleep_mode = false;
 #if defined(CONFIG_WIRELESS_CHARGER_HIGH_VOLTAGE)
 bool wpc_temp_mode = false;
@@ -41,6 +44,12 @@ __setup("zero_sdchg_ic=", zero_sdchg_ic_exist_setup);
 /**************************************************************/
 static struct device_attribute sec_battery_attrs[] = {
 	SEC_BATTERY_ATTR(batt_reset_soc),
+	//My code for battery mhz control
+	SEC_BATTERY_ATTR(batt_lev_start),
+	SEC_BATTERY_ATTR(batt_lev_stop),
+	SEC_BATTERY_ATTR(batt_freq_cl0),
+	SEC_BATTERY_ATTR(batt_freq_cl1),
+	//end my code
 	SEC_BATTERY_ATTR(batt_read_raw_soc),
 	SEC_BATTERY_ATTR(batt_read_adj_soc),
 	SEC_BATTERY_ATTR(batt_type),
@@ -3748,6 +3757,19 @@ ssize_t sec_bat_show_attrs(struct device *dev,
 	switch (offset) {
 	case BATT_RESET_SOC:
 		break;
+		
+	case BATT_LEV_START:
+		return sprintf(buf, "%i\n", bat_start_lvl);
+		
+	case BATT_LEV_STOP:
+		return sprintf(buf, "%i\n", bat_stop_lvl);
+		
+	case BATT_FREQ_CL0:
+		return sprintf(buf, "%u\n", cl_0_batt_mhz);
+		
+	case BATT_FREQ_CL1:
+		return sprintf(buf, "%u\n", cl_1_batt_mhz);
+		
 	case BATT_READ_RAW_SOC:
 		{
 			union power_supply_propval value;
@@ -4513,7 +4535,46 @@ ssize_t sec_bat_store_attrs(
 	int t[12];
 	int i = 0;
 
+	unsigned int my_value = 0;
+	/*
+	int retval;
+	int enabled = 0; */
+	
 	switch (offset) {
+	case BATT_LEV_START:
+		sscanf(buf, "%i", &my_value);
+		
+		if(my_value >= 0 && my_value <= 100) {
+			bat_start_lvl = my_value;
+		}
+		
+		ret = count;
+		break;
+		
+	case BATT_LEV_STOP:
+		sscanf(buf, "%i", &my_value);
+		
+		if(my_value >= 1 && my_value <= 100) {
+			bat_stop_lvl = my_value;
+		}
+		
+		ret = count;
+		break;
+		
+	case BATT_FREQ_CL0:
+		sscanf(buf, "%u", &my_value);
+		
+		cl_0_batt_mhz = my_value;
+		ret = count;
+		break;
+		
+	case BATT_FREQ_CL1:
+		sscanf(buf, "%u", &my_value);
+		cl_1_batt_mhz = my_value;
+		ret = count;
+		break;
+		
+	//Begin samsung stock code -- MY COMMENT
 	case BATT_RESET_SOC:
 		/* Do NOT reset fuel gauge in charging mode */
 		if (battery->cable_type == POWER_SUPPLY_TYPE_BATTERY ||

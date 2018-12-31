@@ -129,6 +129,26 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
 		}
 	}
 	
+	if(should_boost_fingerprint && fingerprint_booster) {
+		target_freq = policy->max;
+	}
+	
+	if(should_apply_bat_mhz) {
+		switch(policy->cpu) {
+			case 0:
+				if(target_freq > cl_0_batt_mhz) {
+					target_freq = cl_0_batt_mhz;
+				}
+				break;
+				
+			case 4:
+				if(target_freq > cl_1_batt_mhz) {
+					target_freq = cl_1_batt_mhz;
+				}
+				break;
+		}
+	}
+	
 	if(cus_thermal_throttle[0] && cus_thermal_throttle[1] && cus_thermal_throttle[4] && cus_thermal_throttle[5]) {
 		
 		if(!is_cus_thermal_throttling) {

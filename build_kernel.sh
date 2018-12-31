@@ -102,8 +102,8 @@ echo "${bldcya}***** Clean source *****${txtrst}"
 cd ${KERNELDIR}
 read -p "Do you want to Clean the source? (y/n) > " mc
 if [ "$mc" = "Y" -o "$mc" = "y" ]; then
-	xterm -e make clean
-	xterm -e make mrproper
+	make clean
+	make mrproper
 fi
 
 echo
