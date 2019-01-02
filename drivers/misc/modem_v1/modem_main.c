@@ -649,8 +649,10 @@ static int modem_probe(struct platform_device *pdev)
 
 free_iod:
 	for (i = 0; i < pdata->num_iodevs; i++) {
-		if (iod[i])
+		if (iod[i]) {
+			sipc5_deinit_io_device(iod[i]);
 			devm_kfree(dev, iod[i]);
+		}
 	}
 	kfree(iod);
 

@@ -119,7 +119,11 @@ static int mmc_queue_thread(void *d)
 			req = NULL;
 			goto fetch_done;
 		}
-		req = blk_fetch_request(q);
+		if (mq->mqrq_prev->req &&
+				(mq->card && (mq->card->type == MMC_TYPE_SD)))
+			req = NULL;
+		else
+			req = blk_fetch_request(q);
 fetch_done:
 		if (!mq->card->ext_csd.cmdq_mode_en)
 			mq->mqrq_cur->req = req;

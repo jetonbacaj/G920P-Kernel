@@ -41,7 +41,7 @@ int get_msdelay(int64_t dDelayRate)
 	return div_s64(dDelayRate, 1000000);
 }
 
-void enable_sensor(struct ssp_data *data,
+static void enable_sensor(struct ssp_data *data,
 	int iSensorType, int64_t dNewDelay)
 {
 	u8 uBuf[9];
@@ -169,7 +169,7 @@ static void change_sensor_delay(struct ssp_data *data,
 /* SSP data enable function                                              */
 /*************************************************************************/
 
-int ssp_remove_sensor(struct ssp_data *data,
+static int ssp_remove_sensor(struct ssp_data *data,
 	unsigned int uChangedSensor, unsigned int uNewEnable)
 {
 	u8 uBuf[4];

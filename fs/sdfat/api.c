@@ -12,9 +12,7 @@
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- *  MA  02110-1301, USA.
+ *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 /************************************************************************/
@@ -132,7 +130,7 @@ s32 fsapi_statfs(struct super_block *sb, VOL_INFO_T *info)
 	FS_INFO_T *fsi = &(SDFAT_SB(sb)->fsi);
 
 	/* check the validity of pointer parameters */
-	ASSERT(info);	
+	ASSERT(info);
 
 	if (fsi->used_clusters == (u32) ~0) {
 		s32 err;
@@ -263,7 +261,8 @@ s32 fsapi_truncate(struct inode *inode, u64 old_size, u64 new_size)
 EXPORT_SYMBOL(fsapi_truncate);
 
 /* rename or move a old file into a new file */
-s32 fsapi_rename(struct inode *old_parent_inode, FILE_ID_T *fid, struct inode *new_parent_inode, struct dentry *new_dentry)
+s32 fsapi_rename(struct inode *old_parent_inode, FILE_ID_T *fid,
+		struct inode *new_parent_inode, struct dentry *new_dentry)
 {
 	s32 err;
 	struct super_block *sb = old_parent_inode->i_sb;
@@ -299,7 +298,7 @@ s32 fsapi_read_inode(struct inode *inode, DIR_ENTRY_T *info)
 {
 	s32 err;
 	struct super_block *sb = inode->i_sb;
-	
+
 	mutex_lock(&(SDFAT_SB(sb)->s_vlock));
 	TMSG("%s entered (inode %p info %p\n", __func__, inode, info);
 	err = fscore_read_inode(inode, info);
@@ -414,13 +413,14 @@ s32 fsapi_rmdir(struct inode *inode, FILE_ID_T *fid)
 }
 EXPORT_SYMBOL(fsapi_rmdir);
 
-/* unlink a file. 
- * that is, remove an entry from a directory. BUT don't truncate */
+/* unlink a file.
+ * that is, remove an entry from a directory. BUT don't truncate
+ */
 s32 fsapi_unlink(struct inode *inode, FILE_ID_T *fid)
 {
 	s32 err;
 	struct super_block *sb = inode->i_sb;
-	
+
 	/* check the validity of pointer parameters */
 	ASSERT(fid);
 	mutex_lock(&(SDFAT_SB(sb)->s_vlock));
@@ -511,10 +511,10 @@ s32 fsapi_dfr_validate_clus(struct inode *inode, void *chunk, int skip_prev)
 	s32 err;
 	struct super_block *sb = inode->i_sb;
 	mutex_lock(&(SDFAT_SB(sb)->s_vlock));
-	err = defrag_validate_cluster(inode, 
-				(struct defrag_chunk_info *)chunk, skip_prev);
+	err = defrag_validate_cluster(inode,
+		(struct defrag_chunk_info *)chunk, skip_prev);
 	mutex_unlock(&(SDFAT_SB(sb)->s_vlock));
-	return(err);
+	return err;
 }
 EXPORT_SYMBOL(fsapi_dfr_validate_clus);
 

@@ -754,12 +754,6 @@ static void max77843_set_current(struct max77843_charger_data *charger)
 	pr_info("%s: siop_level=%d, afc_detec=%d, vbus_ch=%d, current_max=%d, current_now=%d\n",
 		__func__, charger->siop_level, charger->afc_detect, charger->vbus_changing, current_max, current_now);
 
-	if (max77843_check_aicl_state(charger)) {
-		wake_lock(&charger->aicl_wake_lock);
-		queue_delayed_work(charger->wqueue, &charger->aicl_work,
-				msecs_to_jiffies(50));
-	}
-
 	max77843_set_charge_current(charger, current_now);
 	if(charger->batt_cable_type == POWER_SUPPLY_TYPE_WIRELESS) {
 		charger->wc_pre_current = max77843_get_input_current(charger);
@@ -1956,6 +1950,7 @@ static void max77843_aicl_work(struct work_struct *work)
 
 	charger->afc_detect = false;
 
+	wake_lock(&charger->aicl_wake_lock);
 	if ((charger->is_charging) &&
 		(charger->cable_type != POWER_SUPPLY_TYPE_WIRELESS)) {
 		int now_count = 0,
@@ -1988,7 +1983,6 @@ static irqreturn_t max77843_aicl_irq(int irq, void *data)
 
 	pr_info("%s: irq(%d)\n", __func__, irq);
 
-	wake_lock(&charger->aicl_wake_lock);
 	queue_delayed_work(charger->wqueue, &charger->aicl_work,
 		msecs_to_jiffies(50));
 

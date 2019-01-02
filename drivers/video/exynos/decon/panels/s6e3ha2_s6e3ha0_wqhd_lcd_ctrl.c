@@ -50,7 +50,7 @@ static int s6e3ha0_read_init_info(struct dsim_device *dsim)
 	ret = dsim_read_hl_data(dsim, S6E3HA0_ID_REG, S6E3HA0_ID_LEN, dsim->priv.id);
 	if (ret != S6E3HA0_ID_LEN) {
 		dsim_err("%s : can't find connected panel. check panel connection\n",__func__);
-		panel->lcdConnected = PANEL_DISCONNEDTED;
+		panel->lcdConnected = PANEL_DISCONNECTED;
 		goto read_exit;
 	}
 
@@ -123,7 +123,7 @@ static int s6e3ha0_wqhd_probe(struct dsim_device *dsim)
 	dsim_info(" +  : %s\n", __func__);
 
 	ret = s6e3ha0_read_init_info(dsim);
-	if (panel->lcdConnected == PANEL_DISCONNEDTED) {
+	if (panel->lcdConnected == PANEL_DISCONNECTED) {
 		dsim_err("dsim : %s lcd was not connected\n", __func__);
 		goto probe_exit;
 	}
@@ -1060,7 +1060,7 @@ static int s6e3ha2_read_init_info(struct dsim_device *dsim, unsigned char *mtp, 
 	ret = dsim_read_hl_data(dsim, S6E3HA2_ID_REG, S6E3HA2_ID_LEN, dsim->priv.id);
 	if (ret != S6E3HA2_ID_LEN) {
 		dsim_err("%s : can't find connected panel. check panel connection\n", __func__);
-		panel->lcdConnected = PANEL_DISCONNEDTED;
+		panel->lcdConnected = PANEL_DISCONNECTED;
 		goto read_exit;
 	}
 
@@ -1320,7 +1320,7 @@ static int s6e3ha2_wqhd_probe(struct dsim_device *dsim)
 	dsim_info(" +  : %s\n", __func__);
 
 	ret = s6e3ha2_read_init_info(dsim, mtp, hbm);
-	if (panel->lcdConnected == PANEL_DISCONNEDTED) {
+	if (panel->lcdConnected == PANEL_DISCONNECTED) {
 		dsim_err("dsim : %s lcd was not connected\n", __func__);
 		goto probe_exit;
 	}

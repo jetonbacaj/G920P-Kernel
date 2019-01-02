@@ -41,7 +41,9 @@
 #include "ecryptfs_sdp_chamber.h"
 #include "ecryptfs_dek.h"
 
+#if (ANDROID_VERSION < 80000)
 #include "../sdcardfs/sdcardfs.h"
+#endif
 #endif
 
 #ifdef CONFIG_DLP
@@ -76,7 +78,7 @@ void ecryptfs_revert_fsids(const struct cred * old_cred)
 	put_cred(cur_cred); 
 }
 
-#ifndef CONFIG_SDP
+#if !defined(CONFIG_SDP) || (ANDROID_VERSION >= 80000)
 static struct dentry *lock_parent(struct dentry *dentry)
 {
 	struct dentry *dir;
@@ -182,8 +184,10 @@ static int ecryptfs_interpose(struct dentry *lower_dentry,
 		return PTR_ERR(inode);
 
 	d_instantiate(dentry, inode);
+#if (ANDROID_VERSION < 80000)
 	if(d_unhashed(dentry))
 		d_rehash(dentry);
+#endif
 
 #ifdef CONFIG_SDP
 	if(S_ISDIR(inode->i_mode) && dentry) {
@@ -340,13 +344,17 @@ int ecryptfs_initialize_file(struct dentry *ecryptfs_dentry,
 		printk(KERN_ERR "DLP %s: file name: [%s], userid: [%d]\n",
 				__func__, ecryptfs_dentry->d_iname, crypt_stat->mount_crypt_stat->userid);
 #endif
-		if(!rc && (in_egroup_p(AID_KNOX_DLP) || in_egroup_p(AID_KNOX_DLP_RESTRICTED))) {
+		if(!rc && (in_egroup_p(AID_KNOX_DLP) || in_egroup_p(AID_KNOX_DLP_RESTRICTED) || in_egroup_p(AID_KNOX_DLP_MEDIA))) {
 			/* TODO: Can DLP files be created while in locked state? */
 			struct timespec ts;
 			crypt_stat->flags |= ECRYPTFS_DLP_ENABLED;
 			getnstimeofday(&ts);
-			crypt_stat->expiry.expiry_time.tv_sec = (int64_t)ts.tv_sec + 20;
-			crypt_stat->expiry.expiry_time.tv_nsec = (int64_t)ts.tv_nsec;
+			if(in_egroup_p(AID_KNOX_DLP_MEDIA)) {
+				printk(KERN_ERR "DLP %s: media process creating file  : %s\n", __func__, ecryptfs_dentry->d_iname);
+			} else {
+				crypt_stat->expiry.expiry_time.tv_sec = (int64_t)ts.tv_sec + 20;
+				crypt_stat->expiry.expiry_time.tv_nsec = (int64_t)ts.tv_nsec;
+			}
 #if DLP_DEBUG
 			printk(KERN_ERR "DLP %s: current->pid : %d\n", __func__, current->tgid);
 			printk(KERN_ERR "DLP %s: crypt_stat->mount_crypt_stat->userid : %d\n", __func__, crypt_stat->mount_crypt_stat->userid);
@@ -454,8 +462,10 @@ ecryptfs_create(struct inode *directory_inode, struct dentry *ecryptfs_dentry,
 	}
 	unlock_new_inode(ecryptfs_inode);
 	d_instantiate(ecryptfs_dentry, ecryptfs_inode);
+#if (ANDROID_VERSION < 80000)
 	if(d_unhashed(ecryptfs_dentry))
 		d_rehash(ecryptfs_dentry);
+#endif
 out:
 	return rc;
 }
@@ -521,6 +531,10 @@ static int ecryptfs_lookup_interpose(struct dentry *dentry,
 	ecryptfs_set_dentry_lower_mnt(dentry, lower_mnt);
 
 	if (!lower_dentry->d_inode) {
+#if (ANDROID_VERSION >= 80000)
+		/* We want to add because we couldn't find in lower */
+		d_add(dentry, NULL);
+#endif
 		return 0;
 	}
 	inode = __ecryptfs_get_inode(lower_inode, dir_inode->i_sb);
@@ -635,7 +649,7 @@ static struct dentry *ecryptfs_lookup(struct inode *ecryptfs_dir_inode,
 	}
 	mutex_lock(&lower_dir_dentry->d_inode->i_mutex);
 
-#ifdef CONFIG_SDP
+#if defined(CONFIG_SDP) && (ANDROID_VERSION < 80000)
 	if(!strncmp(lower_dir_dentry->d_sb->s_type->name, "sdcardfs", 8)) {
 		struct sdcardfs_dentry_info *dinfo = SDCARDFS_D(lower_dir_dentry);
 		struct dentry *parent = dget_parent(lower_dir_dentry);
@@ -690,7 +704,7 @@ static struct dentry *ecryptfs_lookup(struct inode *ecryptfs_dir_inode,
 	lower_dentry = lookup_one_len(encrypted_and_encoded_name,
 				      lower_dir_dentry,
 				      encrypted_and_encoded_name_size);
-#ifdef CONFIG_SDP
+#if defined(CONFIG_SDP) && (ANDROID_VERSION < 80000)
 	if(!strncmp(lower_dir_dentry->d_sb->s_type->name, "sdcardfs", 8)) {
 		struct sdcardfs_dentry_info *dinfo = SDCARDFS_D(lower_dir_dentry);
 		dinfo->under_knox = 0;
@@ -801,7 +815,7 @@ static int ecryptfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
 	lower_dentry = ecryptfs_dentry_to_lower(dentry);
 	lower_dir_dentry = lock_parent(lower_dentry);
 
-#ifdef CONFIG_SDP
+#if defined(CONFIG_SDP) && (ANDROID_VERSION < 80000)
 	if(!strncmp(lower_dir_dentry->d_sb->s_type->name, "sdcardfs", 8)) {
 		struct sdcardfs_dentry_info *dinfo = SDCARDFS_D(lower_dir_dentry);
 		int len = strlen(dentry->d_name.name);
@@ -828,7 +842,7 @@ static int ecryptfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
 	fsstack_copy_inode_size(dir, lower_dir_dentry->d_inode);
 	set_nlink(dir, lower_dir_dentry->d_inode->i_nlink);
 out:
-#ifdef CONFIG_SDP
+#if defined(CONFIG_SDP) && (ANDROID_VERSION < 80000)
 	if(!strncmp(lower_dir_dentry->d_sb->s_type->name, "sdcardfs", 8)) {
 		struct sdcardfs_dentry_info *dinfo = SDCARDFS_D(lower_dir_dentry);
 		dinfo->under_knox = 0;
@@ -1563,19 +1577,11 @@ ecryptfs_getxattr(struct dentry *dentry, const char *name, void *value,
 				return -ERANGE;
 			}
 			if (crypt_stat->expiry.expiry_time.tv_sec <= 0) {
-				struct timespec ts;
-				getnstimeofday(&ts);
-				crypt_stat->expiry.expiry_time.tv_sec = (int64_t)ts.tv_sec + 20;
-				crypt_stat->expiry.expiry_time.tv_nsec = (int64_t)ts.tv_nsec;
 #if DLP_DEBUG
-				printk(KERN_ERR "DLP %s: use temp expiry\n", __func__);
+				printk(KERN_ERR "DLP %s: expiry time=[%ld], fileName [%s]\n", __func__, (long)crypt_stat->expiry.expiry_time.tv_sec, dentry->d_name.name);
 #endif
 			}
 			memcpy(value, &crypt_stat->expiry, sizeof(struct knox_dlp_data));
-#if DLP_DEBUG
-			printk(KERN_ERR "DLP %s: returning expiry from cryp_stat [%ld]\n",
-					__func__, (long)crypt_stat->expiry.expiry_time.tv_sec);
-#endif
 			rc = sizeof(struct knox_dlp_data);
 		}
 	}

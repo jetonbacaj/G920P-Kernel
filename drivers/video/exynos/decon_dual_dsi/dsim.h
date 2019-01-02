@@ -70,7 +70,7 @@ extern struct dsim_device *dsim1_for_decon;
 #define PANEL_STATE_SUSPENDING	2
 #endif
 
-#define PANEL_DISCONNEDTED		0
+#define PANEL_DISCONNECTED		0
 #define PANEL_CONNECTED			1
 
 #define DSIM_PKTHDR_FIFO_CNT 15

@@ -821,8 +821,6 @@ void remove_event_symlink(struct ssp_data *);
 int ssp_send_cmd(struct ssp_data *, char, int);
 int send_instruction(struct ssp_data *, u8, u8, u8 *, u16);
 int send_instruction_sync(struct ssp_data *, u8, u8, u8 *, u16);
-void enable_sensor(struct ssp_data *, int, int64_t);
-int ssp_remove_sensor(struct ssp_data *, unsigned int, unsigned int);
 int flush(struct ssp_data *, u8);
 int get_batch_count(struct ssp_data *, u8);
 int select_irq_msg(struct ssp_data *);

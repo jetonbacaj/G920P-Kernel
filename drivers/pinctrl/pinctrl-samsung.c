@@ -1883,6 +1883,116 @@ static u8 gpiodvs_combine_data(u32 *data, unsigned char phonestate)
 	return GET_RESULT_GPIO(temp_io, temp_pdpu, temp_lh);
 }
 
+static void gpiodvs_print_pin_state(enum gdvs_phone_status status,
+		int alive, char *bank_name, int pin_num, u32 *data)
+{
+	char buf[48];
+	int len = 0;
+	int pin_dat = 0;
+
+	if (status == PHONE_INIT || alive == 1) {
+		if (alive == 1)
+			len = sprintf(buf, "gpio sleep-state: %s-%d ", bank_name, pin_num);
+		else
+			len = sprintf(buf, "gpio initial-state: %s-%d ", bank_name, pin_num);
+
+		switch (data[PINCFG_TYPE_FUNC]) {
+		case 0x0:	/* input */
+			len += sprintf(&buf[len], "IN");
+			break;
+		case 0x1:	/* output */
+			len += sprintf(&buf[len], "OUT");
+			break;
+		case 0xf:	/* eint */
+			len += sprintf(&buf[len], "INT");
+			break;
+		default:	/* func */
+			len += sprintf(&buf[len], "FUNC");
+			break;
+		}
+
+		switch (data[PINCFG_TYPE_PUD]) {
+		case 0x0:
+			len += sprintf(&buf[len], "/NP");
+			break;
+		case 0x1:
+			len += sprintf(&buf[len], "/PD");
+			break;
+		case 0x2:
+			len += sprintf(&buf[len], "/PU");
+			break;
+		default:
+			len += sprintf(&buf[len], "/UN");	/* unknown */
+			break;
+		}
+
+		switch (data[PINCFG_TYPE_DAT]) {
+		case 0x0:
+			len += sprintf(&buf[len], "/L");
+			break;
+		case 0x1:
+			len += sprintf(&buf[len], "/H");
+			break;
+		default:
+			len += sprintf(&buf[len], "/U");	/* unknown */
+			break;
+		}
+	} else {
+		// PHONE_SLEEP
+		len = sprintf(buf, "gpio sleep-state: %s-%d ", bank_name, pin_num);
+
+		switch (data[PINCFG_TYPE_CON_PDN]) {
+		case 0x0:	/* output low */
+			len += sprintf(&buf[len], "OUT");
+			pin_dat = 0;
+			break;
+		case 0x1:	/* output high*/
+			len += sprintf(&buf[len], "OUT");
+			pin_dat = 1;
+			break;
+		case 0x2:	/* input */
+			len += sprintf(&buf[len], "IN");
+			pin_dat = data[PINCFG_TYPE_DAT];
+			break;
+		case 0x3:	/* previous state */
+			len += sprintf(&buf[len], "PREV");
+			pin_dat = data[PINCFG_TYPE_DAT];
+			break;
+		default:	/* func */
+			len += sprintf(&buf[len], "ERR");
+			break;
+		}
+
+		switch (data[PINCFG_TYPE_PUD_PDN]) {
+		case 0x0:
+			len += sprintf(&buf[len], "/NP");
+			break;
+		case 0x1:
+			len += sprintf(&buf[len], "/PD");
+			break;
+		case 0x2:
+			len += sprintf(&buf[len], "/PU");
+			break;
+		default:
+			len += sprintf(&buf[len], "/UN");	/* unknown */
+			break;
+		}
+
+		switch (pin_dat) {
+		case 0x0:
+			len += sprintf(&buf[len], "/L");
+			break;
+		case 0x1:
+			len += sprintf(&buf[len], "/H");
+			break;
+		default:
+			len += sprintf(&buf[len], "/U");	/* unknown */
+			break;
+		}
+	}
+
+	pr_info("%s\n", buf);
+}
 static void gpiodvs_check_init_gpio(struct samsung_pinctrl_drv_data *drvdata,
 					unsigned pin)
 {
@@ -1893,6 +2003,7 @@ static void gpiodvs_check_init_gpio(struct samsung_pinctrl_drv_data *drvdata,
 	unsigned long flags;
 	enum pincfg_type type;
 	u32 data[PINCFG_TYPE_NUM];
+	static int pin_num = 0;
 
 	pin_to_reg_bank(drvdata, pin - drvdata->ctrl->base,
 					&reg_base, &pin_offset, &bank);
@@ -1944,7 +2055,11 @@ static void gpiodvs_check_init_gpio(struct samsung_pinctrl_drv_data *drvdata,
 
 	gpiomap_result.init[init_gpio_idx++] =
 		gpiodvs_combine_data(data, PHONE_INIT);
+	gpiodvs_print_pin_state(PHONE_INIT, 0, bank->name, pin_num, data);
 out:
+	pin_num++;
+	if (pin_num == bank->nr_pins)
+		pin_num = 0;
 	pr_debug("%s: init[%u]=0x%02x\n", __func__, init_gpio_idx - 1,
 			gpiomap_result.init[init_gpio_idx - 1]);
 }
@@ -1962,6 +2077,7 @@ static void gpiodvs_check_sleep_gpio(struct samsung_pinctrl_drv_data *drvdata,
 	u8 *widths;
 	const unsigned int sleep_type_mask = BIT(PINCFG_TYPE_DAT) |
 		BIT(PINCFG_TYPE_CON_PDN) | BIT(PINCFG_TYPE_PUD_PDN);
+	static int pin_num = 0;
 
 	pin_to_reg_bank(drvdata, pin - drvdata->ctrl->base,
 					&reg_base, &pin_offset, &bank);
@@ -2028,7 +2144,12 @@ static void gpiodvs_check_sleep_gpio(struct samsung_pinctrl_drv_data *drvdata,
 		gpiomap_result.sleep[sleep_gpio_idx++] =
 			gpiodvs_combine_data(data, PHONE_INIT);
 	}
+	gpiodvs_print_pin_state(PHONE_SLEEP, (widths[PINCFG_TYPE_CON_PDN] ? 0 : 1),
+			bank->name, pin_num, data);
 out:
+	pin_num++;
+	if (pin_num == bank->nr_pins)
+		pin_num = 0;
 	pr_debug("%s: sleep[%u]=0x%02x\n", __func__, sleep_gpio_idx - 1,
 			gpiomap_result.sleep[sleep_gpio_idx - 1]);
 }

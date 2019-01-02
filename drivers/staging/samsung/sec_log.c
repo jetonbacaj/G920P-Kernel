@@ -378,7 +378,7 @@ static ssize_t sec_tsp_log_write(struct file *file,
 	if (sscanf(page, "%u", &new_value) != 1) {
 		pr_info("%s\n", page);
 		/* print tsp_log to sec_tsp_log_buf */
-		sec_debug_tsp_log(page);
+		sec_debug_tsp_log("%s", page);
 	}
 	ret = count;
 out:
@@ -446,7 +446,7 @@ void sec_debug_save_last_kmsg(unsigned char* head_ptr, unsigned char* curr_ptr)
 	}
 
 	/* provide previous log as last_kmsg */
-	last_kmsg_size = (size_t)(1 << CONFIG_LOG_BUF_SHIFT);
+	last_kmsg_size = (size_t)SZ_2M;
 	last_kmsg_buffer = (char *)kzalloc(last_kmsg_size, GFP_NOWAIT);
 
 	if (last_kmsg_size && last_kmsg_buffer) {

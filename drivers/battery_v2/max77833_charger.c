@@ -328,6 +328,7 @@ static u8 max77833_get_float_voltage_data(int float_voltage)
 		voltage += 10;
 	}
 
+
 	return i;
 }
 
@@ -829,13 +830,18 @@ static void max77833_set_float_voltage(struct max77833_charger_data *charger, in
 	pr_info("%s: battery cv voltage 0x%x, chg_float_voltage = %dmV \n", __func__, reg_data, charger->pdata->chg_float_voltage);
 }
 
-static u8 max77833_get_float_voltage(struct max77833_charger_data *charger)
+static int max77833_get_float_voltage(struct max77833_charger_data *charger)
 {
 	u8 reg_data = 0;
+        unsigned int float_voltage;
 
 	max77833_read_reg(charger->i2c, MAX77833_CHG_REG_CNFG_06, &reg_data);
-	pr_info("%s: battery cv voltage 0x%x, chg_float_voltage = %dmV \n", __func__, reg_data, charger->pdata->chg_float_voltage);
-	return reg_data;
+
+        float_voltage = (reg_data * 10) + 3000;
+
+	pr_info("%s: battery cv voltage 0x%x, chg_float_voltage = %dmV \n", __func__, reg_data, float_voltage);
+
+	return float_voltage;
 }
 
 #endif

@@ -1195,19 +1195,6 @@ static void s5p_mfc_handle_frame_new(struct s5p_mfc_ctx *ctx, unsigned int err)
 	}
 }
 
-static int s5p_mfc_find_start_code(unsigned char *src_mem, unsigned int remainSize)
-{
-	unsigned int index = 0;
-
-	for (index = 0; index < remainSize - 3; index++) {
-		if ((src_mem[index] == 0x00) && (src_mem[index+1] == 0x00) &&
-				(src_mem[index+2] == 0x01))
-			return index;
-	}
-
-	return -1;
-}
-
 static void s5p_mfc_handle_frame_error(struct s5p_mfc_ctx *ctx,
 		unsigned int reason, unsigned int err)
 {
@@ -1359,6 +1346,52 @@ static void s5p_mfc_handle_ref_frame(struct s5p_mfc_ctx *ctx)
 	}
 }
 
+static void s5p_mfc_move_reuse_buffer(struct s5p_mfc_ctx *ctx, int release_index)
+{
+	struct s5p_mfc_dec *dec = ctx->dec_priv;
+	struct s5p_mfc_buf *ref_mb, *tmp_mb;
+	int index;
+
+	list_for_each_entry_safe(ref_mb, tmp_mb, &dec->ref_queue, list) {
+		index = ref_mb->vb.v4l2_buf.index;
+		if (index == release_index) {
+			ref_mb->used = 0;
+
+			list_del(&ref_mb->list);
+			dec->ref_queue_cnt--;
+
+			list_add_tail(&ref_mb->list, &ctx->dst_queue);
+			ctx->dst_queue_cnt++;
+
+			clear_bit(index, &dec->dpb_status);
+			mfc_debug(2, "buffer[%d] is moved to dst queue for reuse\n", index);
+		}
+	}
+}
+
+static void s5p_mfc_handle_reuse_buffer(struct s5p_mfc_ctx *ctx)
+{
+	struct s5p_mfc_dev *dev = ctx->dev;
+	struct s5p_mfc_dec *dec = ctx->dec_priv;
+	unsigned int prev_flag, released_flag = 0;
+	int i;
+
+	if (!dec->is_dynamic_dpb)
+		return;
+
+	prev_flag = dec->dynamic_used;
+	dec->dynamic_used = mfc_get_dec_used_flag();
+	released_flag = prev_flag & (~dec->dynamic_used);
+
+	if (!released_flag)
+		return;
+
+	/* reuse not referenced buf anymore */
+	for (i = 0; i < MFC_MAX_DPBS; i++)
+		if (released_flag & (1 << i))
+			s5p_mfc_move_reuse_buffer(ctx, i);
+}
+
 /* Handle frame decoding interrupt */
 static void s5p_mfc_handle_frame(struct s5p_mfc_ctx *ctx,
 					unsigned int reason, unsigned int err)
@@ -1477,11 +1510,17 @@ static void s5p_mfc_handle_frame(struct s5p_mfc_ctx *ctx,
 
 	if (dec->is_dynamic_dpb) {
 		switch (dst_frame_status) {
-		case S5P_FIMV_DEC_STATUS_DECODING_ONLY:
-			dec->dynamic_used |= mfc_get_dec_used_flag();
-			/* Fall through */
 		case S5P_FIMV_DEC_STATUS_DECODING_DISPLAY:
 			s5p_mfc_handle_ref_frame(ctx);
+			break;
+		case S5P_FIMV_DEC_STATUS_DECODING_ONLY:
+			s5p_mfc_handle_ref_frame(ctx);
+			/*
+			 * Some cases can have many decoding only frames like VP9
+			 * alt-ref frame. So need handling release buffer
+			 * because of DPB full.
+			 */
+			s5p_mfc_handle_reuse_buffer(ctx);
 			break;
 		default:
 			break;
@@ -1511,52 +1550,17 @@ static void s5p_mfc_handle_frame(struct s5p_mfc_ctx *ctx,
 		dec->consumed += s5p_mfc_get_consumed_stream();
 		remained = (unsigned int)(src_buf->vb.v4l2_planes[0].bytesused - dec->consumed);
 
-		if ((prev_offset == 0) && dec->is_packedpb && remained > STUFF_BYTE &&
-			dec->consumed < src_buf->vb.v4l2_planes[0].bytesused &&
-			s5p_mfc_get_dec_frame_type() ==
-						S5P_FIMV_DECODED_FRAME_P) {
-			unsigned char *stream_vir;
-			int offset = 0;
-
+		if ((dec->consumed > 0) && (remained > STUFF_BYTE) && (err == 0) &&
+				(src_buf->vb.v4l2_planes[0].bytesused > dec->consumed)) {
 			/* Run MFC again on the same buffer */
 			mfc_debug(2, "Running again the same buffer.\n");
 
-			if (IS_MFCv7X(dev) && dec->is_dual_dpb)
-				dec->y_addr_for_pb = mfc_get_dec_first_addr();
-			else
+			if (dec->is_packedpb)
 				dec->y_addr_for_pb = (dma_addr_t)MFC_GET_ADR(DEC_DECODED_Y);
 
-			spin_unlock_irqrestore(&dev->irqlock, flags);
-			stream_vir = vb2_plane_vaddr(&src_buf->vb, 0);
-			s5p_mfc_mem_inv_vb(&src_buf->vb, 1);
-			spin_lock_irqsave(&dev->irqlock, flags);
-
-			if (ctx->codec_mode != S5P_FIMV_CODEC_VP9_DEC) {
-				offset = s5p_mfc_find_start_code(
-						stream_vir + dec->consumed, remained);
-			}
-
-			if (offset > STUFF_BYTE)
-				dec->consumed += offset;
-
-#if 0
-			s5p_mfc_set_dec_stream_buffer(ctx,
-				src_buf->planes.stream, dec->consumed,
-				src_buf->vb.v4l2_planes[0].bytesused -
-							dec->consumed);
-			dev->curr_ctx = ctx->num;
-			dev->curr_ctx_drm = ctx->is_drm;
-			s5p_mfc_clean_ctx_int_flags(ctx);
-			s5p_mfc_clear_int_flags();
-			wake_up_ctx(ctx, reason, err);
-			spin_unlock_irqrestore(&dev->irqlock, flags);
-			s5p_mfc_decode_one_frame(ctx, 0);
-			return;
-#else
 			dec->remained_size = src_buf->vb.v4l2_planes[0].bytesused -
 							dec->consumed;
 			/* Do not move src buffer to done_list */
-#endif
 		} else if (s5p_mfc_err_dec(err) == S5P_FIMV_ERR_NON_PAIRED_FIELD) {
 			/*
 			 * For non-paired field, the same buffer need to be

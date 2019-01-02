@@ -288,7 +288,7 @@ static int dsim_partial_area_command(struct dsim_device *dsim, void *arg)
 	struct panel_private *panel = &dsim->priv;
 	struct decon_win_rect *win_rect = (struct decon_win_rect *)arg;
 	
-	if (panel->lcdConnected == PANEL_DISCONNEDTED)
+	if (panel->lcdConnected == PANEL_DISCONNECTED)
 		return 0;
 
 	/* w is right & h is bottom */
@@ -600,7 +600,7 @@ int dsim_write_hl_data(struct dsim_device *dsim, const u8 *cmd, u32 cmdSize)
 	int retry;
 	struct panel_private *panel = &dsim->priv;
 
-	if (panel->lcdConnected == PANEL_DISCONNEDTED)
+	if (panel->lcdConnected == PANEL_DISCONNECTED)
 		return cmdSize;
 
 	//mutex_lock(&dsim->rdwr_lock);
@@ -630,7 +630,7 @@ int dsim_read_hl_data(struct dsim_device *dsim, u8 addr, u8 size, u8 *buf)
 	int retry = 5;
 	struct panel_private *panel = &dsim->priv;
 
-	if (panel->lcdConnected == PANEL_DISCONNEDTED)
+	if (panel->lcdConnected == PANEL_DISCONNECTED)
 		return size;
 
 try_read:

@@ -348,21 +348,21 @@ static int ea8061v_read_init_info(struct dsim_device *dsim, unsigned char *mtp, 
 	ret = dsim_write_hl_data(dsim, EA8061V_SEQ_LEVEL2_KEY_UNLOCK_F0, ARRAY_SIZE(EA8061V_SEQ_LEVEL2_KEY_UNLOCK_F0));
 	if (ret < 0) {
 		dsim_err("%s : fail to write CMD : SEQ_LEVEL2_KEY_UNLOCK_F0\n", __func__);
-		panel->lcdConnected[pi] = PANEL_DISCONNEDTED;
+		panel->lcdConnected[pi] = PANEL_DISCONNECTED;
 		goto read_fail;
 	}
 
 	ret = dsim_write_hl_data(dsim, EA8061V_SEQ_MTP_KEY_UNLOCK_F1, ARRAY_SIZE(EA8061V_SEQ_MTP_KEY_UNLOCK_F1));
 	if (ret < 0) {
 		dsim_err("%s : fail to write CMD : SEQ_MTP_KEY_UNLOCK_F1\n", __func__);
-		panel->lcdConnected[pi] = PANEL_DISCONNEDTED;
+		panel->lcdConnected[pi] = PANEL_DISCONNECTED;
 		goto read_fail;
 	}
 
 	ret = dsim_read_hl_data(dsim, EA8061V_ID_REG, EA8061V_ID_LEN, dsim->priv.id);
 	if (ret != EA8061V_ID_LEN) {
 		dsim_err("%s : can't find connected panel. check panel connection\n", __func__);
-		panel->lcdConnected[pi] = PANEL_DISCONNEDTED;
+		panel->lcdConnected[pi] = PANEL_DISCONNECTED;
 		goto read_fail;
 	}
 
@@ -431,7 +431,7 @@ static int ea8061v_read_init_info(struct dsim_device *dsim, unsigned char *mtp, 
 	return 0;
 
 read_fail:
-	panel->lcdConnected[pi] = PANEL_DISCONNEDTED;
+	panel->lcdConnected[pi] = PANEL_DISCONNECTED;
 	return -ENODEV;
 }
 
@@ -445,7 +445,7 @@ static int ea8061v_xga_probe_core(struct dsim_device *dsim, int pi)
 	dsim_info("MDD : %s\n", __func__);
 
 	ret = ea8061v_read_init_info(dsim, mtp, hbm, pi);
-	if (panel->lcdConnected[pi] == PANEL_DISCONNEDTED) {
+	if (panel->lcdConnected[pi] == PANEL_DISCONNECTED) {
 		dsim_err("dsim : %s lcd was not connected\n", __func__);
 		goto probe_exit;
 	}

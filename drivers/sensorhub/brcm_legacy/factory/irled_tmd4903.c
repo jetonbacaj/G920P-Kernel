@@ -34,14 +34,6 @@ static ssize_t irled_send_store(struct device *dev,
 		return FAIL;
 	}
 
-	mutex_lock(&data->enable_mutex);
-	if ((atomic_read(&data->aSensorEnable) & (1 << PROXIMITY_SENSOR))) {
-		pr_info("[SSP] disable proximity sensor as IRLED cmd received\n");
-		data->reportedData[PROXIMITY_SENSOR] = false;
-		ssp_remove_sensor(data, PROXIMITY_SENSOR, 0);
-	}
-	mutex_unlock(&data->enable_mutex);
-
 	buf_len = (unsigned int)(strlen(buf)+1);
 	msg = kzalloc(sizeof(*msg), GFP_KERNEL);
 	if (msg == NULL) {
@@ -69,15 +61,6 @@ static ssize_t irled_send_store(struct device *dev,
 	}
 
 	pr_info("[SSP] %s IRLED SEND Success %d \n", __func__, iRet);
-
-	mutex_lock(&data->enable_mutex);
-	if ((atomic_read(&data->aSensorEnable) & (1 << PROXIMITY_SENSOR))) {
-		pr_info("[SSP] enable proximity sensor as IRLED cmd finished\n");
-		data->aiCheckStatus[PROXIMITY_SENSOR] = ADD_SENSOR_STATE;
-		enable_sensor(data, PROXIMITY_SENSOR, data->adDelayBuf[PROXIMITY_SENSOR]);
-	}
-	mutex_unlock(&data->enable_mutex);
-
 	return size;
 }
 
