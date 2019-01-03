@@ -525,6 +525,7 @@ static int create_bulk_endpoints(struct acc_dev *dev,
 	dev->ep_out = ep;
 
 
+	
 	/* now allocate requests for our endpoints */
 	for (i = 0; i < TX_REQ_MAX; i++) {
 		req = acc_request_new(dev->ep_in, BULK_BUFFER_SIZE);

@@ -14,7 +14,11 @@
 
 #include "../dsim.h"
 #include "dsim_panel.h"
-#include "panel_info.h"
+//#include "panel_info.h"
+#include "s6e3hf2_wqhd_param.h"
+#ifdef CONFIG_PANEL_AID_DIMMING
+#include "aid_dimming.h"
+#endif
 #include "dsim_backlight.h"
 #include "../decon.h"
 
