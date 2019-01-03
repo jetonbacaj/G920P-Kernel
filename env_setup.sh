@@ -56,7 +56,7 @@ export KCONFIG_NOTIMESTAMP=true
 export ARCH=arm64;
 export SUB_ARCH=arm64;
 
-export KERNEL_CONFIG="my_defconfig";
+export KERNEL_CONFIG="zerofltespr_02_defconfig";
 
 # build script
 export USER=`whoami`;
