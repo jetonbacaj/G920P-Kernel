@@ -680,6 +680,8 @@ static void cpufreq_interactive_timer(unsigned long data)
 		return;
 	if (!pcpu->governor_enabled)
 		goto exit;
+	if (pcpu->policy->min == pcpu->policy->max)
+		goto rearm;
 
 	spin_lock_irqsave(&pcpu->load_lock, flags);
 	now = update_load(data);
