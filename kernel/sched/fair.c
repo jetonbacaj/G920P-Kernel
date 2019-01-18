@@ -7971,10 +7971,15 @@ static unsigned int hmp_idle_pull(int this_cpu)
 				p = task_of(curr);
 				target = rq;
 				ratio = curr->avg.load_avg_ratio;
-				get_task_struct(p);
+				get_task_struct(p); /* ref lives after the loop! */
 			}
 		raw_spin_unlock_irqrestore(&rq->lock, flags);
 	}
+	/* !!!
+	 *   at this point 'p' will have a new reference (ours)
+	 *   because of the final get_task_struct call.
+	 * !!!
+	 */
 
 	if ( !p )
 		goto done;
@@ -7982,7 +7987,6 @@ static unsigned int hmp_idle_pull(int this_cpu)
 	/* now we have a candidate */
 	raw_spin_lock_irqsave(&target->lock, flags);
 	if (!target->active_balance && task_rq(p) == target) {
-		get_task_struct(p);
 		target->push_cpu = this_cpu;
 		target->migrate_task = p;
 		trace_sched_hmp_migrate(p, target->push_cpu,
