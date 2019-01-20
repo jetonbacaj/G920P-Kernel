@@ -701,8 +701,8 @@ static ssize_t store_touch_boost_cpu_cl0(struct cpufreq_ktoonservative_tunables
 	if (ret != 1)
 		return -EINVAL;
 
-	if (input > GLOBALKT_MAX_FREQ_LIMIT[0])
-		input = GLOBALKT_MAX_FREQ_LIMIT[0];
+	if (input > 1800)
+		input = 1800;
 	if (input < 0)
 		input = 0;
 	tunables->touch_boost_cpu_cl0 = input;
@@ -723,8 +723,8 @@ static ssize_t store_touch_boost_cpu_cl1(struct cpufreq_ktoonservative_tunables
 	if (ret != 1)
 		return -EINVAL;
 
-	if (input > GLOBALKT_MAX_FREQ_LIMIT[4])
-		input = GLOBALKT_MAX_FREQ_LIMIT[4];
+	if (input > 2304)
+		input = 2304;
 	if (input < 0)
 		input = 0;
 	tunables->touch_boost_cpu_cl1 = input;
@@ -1609,6 +1609,7 @@ static const char *ktoonservative_sysfs[] = {
 	"touch_boost_cpu_cl1",
 	"touch_boost_core_1",
 	"touch_boost_core_2",
+	"touch_boost_core_3",
 	"touch_boost_core_4",
 	"touch_boost_core_5",
 	"touch_boost_core_6",

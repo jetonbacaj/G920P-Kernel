@@ -22,6 +22,7 @@
 #include <linux/init.h>
 #include <linux/notifier.h>
 #include <linux/cpufreq.h>
+#include <linux/cpufreq_kt.h>
 #include <linux/delay.h>
 #include <linux/interrupt.h>
 #include <linux/spinlock.h>
@@ -34,8 +35,22 @@
 
 #include <trace/events/power.h>
 
+unsigned int main_cpufreq_control[8];
 unsigned int vfreq_lock = 0;
 static bool vfreq_lock_tempOFF = false;
+
+struct hotplug_data {
+	struct work_struct hotplug_work;
+	unsigned int work_speed_min;
+	unsigned int work_speed_max;
+	unsigned int work_speed_core_start;
+	unsigned int work_speed_core_stop;
+	unsigned int work_screen_going_off;
+};
+static struct hotplug_data *hotplug_data_cl0;
+static struct hotplug_data *hotplug_data_cl1;
+
+static struct workqueue_struct *dbs_wq;
 
 /**
  * The "cpufreq driver" - the arch- or hardware-dependent low
