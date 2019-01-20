@@ -34,6 +34,9 @@
 
 #include <trace/events/power.h>
 
+unsigned int vfreq_lock = 0;
+static bool vfreq_lock_tempOFF = false;
+
 /**
  * The "cpufreq driver" - the arch- or hardware-dependent low
  * level driver of CPUFreq support, and its spinlock. This lock
@@ -680,6 +683,46 @@ static ssize_t show_bios_limit(struct cpufreq_policy *policy, char *buf)
 	return sprintf(buf, "%u\n", policy->cpuinfo.max_freq);
 }
 
+static ssize_t store_scaling_max_freq_kt(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+	return store_scaling_max_freq(policy, buf, count);
+}
+
+static ssize_t show_scaling_max_freq_kt(struct cpufreq_policy *policy, char *buf)
+{
+	return show_scaling_max_freq(policy, buf);
+}
+
+static ssize_t store_scaling_min_freq_kt(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+	return store_scaling_min_freq(policy, buf, count);
+}
+
+static ssize_t show_scaling_min_freq_kt(struct cpufreq_policy *policy, char *buf)
+{
+	return show_scaling_min_freq(policy, buf);
+}
+
+static ssize_t show_freq_lock(struct cpufreq_policy *policy, char *buf)
+{
+	return sprintf(buf, "%u\n", vfreq_lock);
+}
+static ssize_t store_freq_lock(struct cpufreq_policy *policy,
+					const char *buf, size_t count)
+{
+	unsigned int value = 0;
+	unsigned int ret;
+	ret = sscanf(buf, "%u", &value);
+	if (value > 1)
+		value = 1;
+	if (value == 0)
+		vfreq_lock_tempOFF = false;
+
+	vfreq_lock = value;
+
+	return count;
+}
+
 cpufreq_freq_attr_ro_perm(cpuinfo_cur_freq, 0400);
 cpufreq_freq_attr_ro(cpuinfo_min_freq);
 cpufreq_freq_attr_ro(cpuinfo_max_freq);
@@ -693,9 +736,12 @@ cpufreq_freq_attr_ro(affected_cpus);
 cpufreq_freq_attr_rw(policy_min_freq);
 cpufreq_freq_attr_rw(policy_max_freq);
 cpufreq_freq_attr_rw(scaling_min_freq);
+cpufreq_freq_attr_rw(scaling_min_freq_kt);
 cpufreq_freq_attr_rw(scaling_max_freq);
+cpufreq_freq_attr_rw(scaling_max_freq_kt);
 cpufreq_freq_attr_rw(scaling_governor);
 cpufreq_freq_attr_rw(scaling_setspeed);
+cpufreq_freq_attr_rw(freq_lock);
 
 static struct attribute *default_attrs[] = {
 	&cpuinfo_min_freq.attr,
@@ -704,13 +750,16 @@ static struct attribute *default_attrs[] = {
 	&policy_min_freq.attr,
 	&policy_max_freq.attr,
 	&scaling_min_freq.attr,
+	&scaling_min_freq_kt.attr,
 	&scaling_max_freq.attr,
+	&scaling_max_freq_kt.attr,
 	&affected_cpus.attr,
 	&related_cpus.attr,
 	&scaling_governor.attr,
 	&scaling_driver.attr,
 	&scaling_available_governors.attr,
 	&scaling_setspeed.attr,
+	&freq_lock.attr,
 	NULL
 };
 
@@ -1812,6 +1861,9 @@ static int __cpufreq_set_policy(struct cpufreq_policy *data,
 	memcpy(&policy->cpuinfo, &data->cpuinfo,
 				sizeof(struct cpufreq_cpuinfo));
 
+	if (vfreq_lock_tempOFF)
+		vfreq_lock = 1;
+
 	if ((policy->min > data->max || policy->max < data->min) &&
 		(policy->max < policy->min)) {
 		ret = -EINVAL;
@@ -1822,7 +1874,6 @@ static int __cpufreq_set_policy(struct cpufreq_policy *data,
 	ret = cpufreq_driver->verify(policy);
 	if (ret)
 		goto error_out;
-
 	/* adjust if necessary - all reasons */
 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
 			CPUFREQ_ADJUST, policy);
