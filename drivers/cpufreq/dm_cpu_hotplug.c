@@ -448,7 +448,6 @@ static int fb_state_change(struct notifier_block *nb,
 	case FB_BLANK_POWERDOWN:
 		lcd_is_on = false;
 		pr_info("LCD is off\n");
-		screen_is_on = false;
 
 		delay = POLLING_MSEC_DISP_OFF;
 
@@ -468,7 +467,6 @@ static int fb_state_change(struct notifier_block *nb,
 		 * turned on.
 		 */
 		lcd_is_on = true;
-		screen_is_on = true;
 		pr_info("LCD is on\n");
 
 		delay = POLLING_MSEC_DISP_ON;
@@ -501,15 +499,16 @@ static bool fp_lockscreen_mode = false;
 
 static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 {
+
+	if ((ktoonservative_is_active && ktoonservative_hp_active) || exynos_dm_hotplug_disabled())
+		return 0;
+
 	int i = 0;
 	int ret = 0;
 #if defined(CONFIG_SCHED_HMP)
 	int hotplug_out_limit = 0;
 #endif
 	int tmp_nr_sleep_prepare_cpus = 0;
-
-	if (exynos_dm_hotplug_disabled())
-		return 0;
 
 #if defined(CONFIG_SCHED_HMP)
 	if (out_flag) {
