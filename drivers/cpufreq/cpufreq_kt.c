@@ -24,22 +24,14 @@ static int fb_state_change(struct notifier_block *nb,
 
 	switch (blank) {
 	case FB_BLANK_POWERDOWN:
-		if (ktoonservative_is_active)
-		{
-			pr_alert("KT GOT SCREEN OFF-0\n");
+		if (ktoonservative_is_active) {
 			ktoonservative_screen_is_on(false, 0);
-			//pr_alert("KT GOT SCREEN OFF-4\n");
-			//ktoonservative_screen_is_on(false, 4);
 		}
 		screen_is_on = false;
 		break;
 	case FB_BLANK_UNBLANK:
-		if (ktoonservative_is_active)
-		{
-			pr_alert("KT GOT SCREEN ON-0\n");
+		if (ktoonservative_is_active) {
 			ktoonservative_screen_is_on(true, 0);
-			//pr_alert("KT GOT SCREEN ON-4\n");
-			//ktoonservative_screen_is_on(true, 4);
 		}
 		screen_is_on = true;
 		break;

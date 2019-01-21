@@ -74,6 +74,9 @@ extern unsigned int cpu_core_smp_status[];
 static unsigned int cpus_online;	/* number of CPUs using this policy */
 bool force_cores_down[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
+static unsigned int MAX_CL0_FREQ = 1800000;
+static unsigned int MAX_CL1_FREQ = 2304000;
+
 /*
  * The polling frequency of this governor depends on the capability of
  * the processor. Default polling frequency is 1000 times the transition
@@ -701,8 +704,8 @@ static ssize_t store_touch_boost_cpu_cl0(struct cpufreq_ktoonservative_tunables
 	if (ret != 1)
 		return -EINVAL;
 
-	if (input > 1800)
-		input = 1800;
+	if (input > MAX_CL0_FREQ)
+		input = MAX_CL0_FREQ;
 	if (input < 0)
 		input = 0;
 	tunables->touch_boost_cpu_cl0 = input;
@@ -723,8 +726,8 @@ static ssize_t store_touch_boost_cpu_cl1(struct cpufreq_ktoonservative_tunables
 	if (ret != 1)
 		return -EINVAL;
 
-	if (input > 2304)
-		input = 2304;
+	if (input > MAX_CL1_FREQ)
+		input = MAX_CL1_FREQ;
 	if (input < 0)
 		input = 0;
 	tunables->touch_boost_cpu_cl1 = input;

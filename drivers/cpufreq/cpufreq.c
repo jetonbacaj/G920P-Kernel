@@ -39,19 +39,6 @@ unsigned int main_cpufreq_control[8];
 unsigned int vfreq_lock = 0;
 static bool vfreq_lock_tempOFF = false;
 
-struct hotplug_data {
-	struct work_struct hotplug_work;
-	unsigned int work_speed_min;
-	unsigned int work_speed_max;
-	unsigned int work_speed_core_start;
-	unsigned int work_speed_core_stop;
-	unsigned int work_screen_going_off;
-};
-static struct hotplug_data *hotplug_data_cl0;
-static struct hotplug_data *hotplug_data_cl1;
-
-static struct workqueue_struct *dbs_wq;
-
 /**
  * The "cpufreq driver" - the arch- or hardware-dependent low
  * level driver of CPUFreq support, and its spinlock. This lock
@@ -477,6 +464,8 @@ static ssize_t store_##file_name					\
 store_one(policy_min_freq, min);
 store_one(policy_max_freq, max);
 //store_one(scaling_min_freq, user_min);
+
+
 static ssize_t store_scaling_min_freq(struct cpufreq_policy *policy,
 					const char *buf, size_t count)
 {
@@ -2166,6 +2155,7 @@ int cpufreq_unregister_driver(struct cpufreq_driver *driver)
 	write_lock_irqsave(&cpufreq_driver_lock, flags);
 	cpufreq_driver = NULL;
 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+
 
 	return 0;
 }
