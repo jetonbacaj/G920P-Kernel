@@ -2722,18 +2722,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 		}
 
 		mutex_lock(&dbs_mutex);
-		
-		if (cpu == 4) 
-		{
-			if (vfreq_lock)
-			{
-				char buf[NAME_MAX];
-				snprintf(buf, sizeof(buf), "/sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq");
-				sys_chmod(buf, 0444);
-				snprintf(buf, sizeof(buf), "/sys/devices/system/cpu/cpu4/cpufreq/scaling_min_freq");
-				sys_chmod(buf, 0444);
-			}
-		}
+
 		for_each_cpu(j, policy->cpus)
 		{
 			struct cpufreq_policy *extra_policy;

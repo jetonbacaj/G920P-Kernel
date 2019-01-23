@@ -426,7 +426,21 @@ KBUILD_CFLAGS   := -w -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fshort-wchar \
 		   -Wno-logical-not-parentheses \
 		   -mtune=cortex-a57.cortex-a53 \
-		   -mcpu=cortex-a57.cortex-a53+crc+crypto 
+		   -mcpu=cortex-a57.cortex-a53+crc+crypto \
+		   -Wno-array-bounds \
+			-Wno-bool-operation \
+			-Wno-discarded-array-qualifiers \
+			-Wno-int-in-bool-context \
+			-Wno-format-overflow \
+			-Wno-format-truncation \
+			-Wno-logical-not-parentheses \
+			-Wno-memset-elt-size \
+			-Wno-misleading-indentation \
+			-Wno-nonnull \
+			-Wno-switch-unreachable \
+			-Wno-switch-bool \
+			-Wno-tautological-compare \
+			-Wno-unused-const-variable
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
