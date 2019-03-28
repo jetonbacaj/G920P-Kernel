@@ -264,10 +264,9 @@ ifdef CONFIG_CC_OPTIMIZE_FAST
 HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -Ofast -fomit-frame-pointer -std=gnu89
 HOSTCXXFLAGS = -Ofast
 endif
-
 ifdef CONFIG_CC_GRAPHITE_OPTIMIZATION
-HOSTCFLAGS   = $(GRAPHITE)
-HOSTCXXFLAGS = $(GRAPHITE)
+HOSTCFLAGS   += $(GRAPHITE)
+HOSTCXXFLAGS += $(GRAPHITE)
 endif
 
 # Decide whether to build built-in, modular, or both.
@@ -422,13 +421,29 @@ KBUILD_CFLAGS   := -w -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-delete-null-pointer-checks \
 		   -fdiagnostics-show-option -Werror \
 		   -pipe -fno-pic -O2 \
-		   -std=gnu89 \
+		   -std=gnu89 $(call cc-option,-fno-PIE) \
+		   -fshort-wchar \
+		   -Wno-logical-not-parentheses \
 		   -mtune=cortex-a57.cortex-a53 \
-		   -mcpu=cortex-a57.cortex-a53+crc+crypto 
+		   -mcpu=cortex-a57.cortex-a53+crc+crypto \
+		   -Wno-array-bounds \
+			-Wno-bool-operation \
+			-Wno-discarded-array-qualifiers \
+			-Wno-int-in-bool-context \
+			-Wno-format-overflow \
+			-Wno-format-truncation \
+			-Wno-logical-not-parentheses \
+			-Wno-memset-elt-size \
+			-Wno-misleading-indentation \
+			-Wno-nonnull \
+			-Wno-switch-unreachable \
+			-Wno-switch-bool \
+			-Wno-tautological-compare \
+			-Wno-unused-const-variable
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
-KBUILD_AFLAGS   := -D__ASSEMBLY__
+KBUILD_AFLAGS   := -D__ASSEMBLY__ $(call cc-option,-fno-PIE)
 KBUILD_AFLAGS_MODULE  := -DMODULE
 KBUILD_CFLAGS_MODULE  := -DMODULE
 KBUILD_LDFLAGS_MODULE := -T $(srctree)/scripts/module-common.lds
@@ -651,7 +666,7 @@ ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os $(call cc-disable-warning,maybe-uninitialized,)
 endif
 ifdef CONFIG_CC_OPTIMIZE_DEFAULT
-KBUILD_CFLAGS	+= -O2
+KBUILD_CFLAGS	+= -O2 -finline-functions -Wno-maybe-uninitialized
 endif
 ifdef CONFIG_CC_OPTIMIZE_MORE
 KBUILD_CFLAGS	+= -O3
