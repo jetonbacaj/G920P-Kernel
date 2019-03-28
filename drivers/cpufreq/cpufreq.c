@@ -35,10 +35,10 @@
 
 #include <trace/events/power.h>
 
-unsigned int GLOBALKT_MIN_FREQ_LIMIT[] = { 200000, 200000, 200000, 200000, 500000, 500000, 500000, 500000 };
-unsigned int GLOBALKT_MAX_FREQ_LIMIT[] = { 1600000, 1600000, 1600000, 1600000, 2400000, 2400000, 2400000, 2400000 };
-unsigned int CPUINFO_MIN_FREQ_LIMIT[] = { 200000, 200000, 200000, 200000, 500000, 500000, 500000, 500000 };
-unsigned int CPUINFO_MAX_FREQ_LIMIT[] = { 1600000, 1600000, 1600000, 1600000, 2400000, 2400000, 2400000, 2400000 };
+unsigned int GLOBALKT_MIN_FREQ_LIMIT[] = { 200000, 200000, 200000, 200000, 200000, 200000, 200000, 200000 };
+unsigned int GLOBALKT_MAX_FREQ_LIMIT[] = { 1800000, 1800000, 1800000, 1800000, 2340000, 2340000, 2340000, 2340000 };
+unsigned int CPUINFO_MIN_FREQ_LIMIT[] = { 200000, 200000, 200000, 200000, 200000, 200000, 200000, 200000 };
+unsigned int CPUINFO_MAX_FREQ_LIMIT[] = { 1800000, 1800000, 1800000, 1800000, 2340000, 2340000, 2340000, 2340000 };
 unsigned int main_cpufreq_control[8];
 unsigned int vfreq_lock = 0;
 static bool vfreq_lock_tempOFF = false;
@@ -488,6 +488,7 @@ static ssize_t store_##file_name					\
 store_one(policy_min_freq, min);
 store_one(policy_max_freq, max);
 //store_one(scaling_min_freq, user_min);
+/*
 static ssize_t store_scaling_min_freq(struct cpufreq_policy *policy,
 					const char *buf, size_t count)
 {
@@ -534,7 +535,7 @@ static ssize_t store_scaling_max_freq(struct cpufreq_policy *policy,
 	policy->user_policy.max = policy->max;
 
 	return ret ? ret : count;
-}
+} */
 
 static void __cpuinit set_cpu_min_max_work_fn(struct work_struct *work)
 {

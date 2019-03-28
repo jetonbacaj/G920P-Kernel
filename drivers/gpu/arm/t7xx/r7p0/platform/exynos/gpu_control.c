@@ -19,6 +19,9 @@
 
 #include <linux/pm_qos.h>
 #include <mach/pm_domains.h>
+#ifdef CONFIG_CPU_FREQ_GOV_KTOONSERVATIVE
+#include <linux/cpufreq_kt.h>
+#endif
 
 #include "mali_kbase_platform.h"
 #include "gpu_dvfs_handler.h"

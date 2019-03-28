@@ -1609,6 +1609,7 @@ static const char *ktoonservative_sysfs[] = {
 	"touch_boost_cpu_cl1",
 	"touch_boost_core_1",
 	"touch_boost_core_2",
+	"touch_boost_core_3",
 	"touch_boost_core_4",
 	"touch_boost_core_5",
 	"touch_boost_core_6",
@@ -2448,7 +2449,7 @@ static void cpufreq_param_set_init(struct cpufreq_ktoonservative_tunables *tunab
 	tunables->disable_hotplug_chrg = 0;
 	tunables->disable_hotplug_media = 0;
 	tunables->disable_hotplug_bt = 0;
-	tunables->no_extra_cores_screen_off = 1;
+	tunables->no_extra_cores_screen_off = 0;
 	tunables->sampling_rate_min = 20000;
 	tunables->sampling_rate = 45000;
 	tunables->sampling_rate_screen_off = 40000;
