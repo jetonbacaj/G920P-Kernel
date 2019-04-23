@@ -115,7 +115,7 @@ struct cpufreq_nexus_tunables {
 	struct cpufreq_nexus_cpuinfo *cpuinfo;
 
 	// load at which the cpugov decides to scale down
-	#define DEFAULT_DOWN_LOAD 40
+	#define DEFAULT_DOWN_LOAD 50
 	unsigned int down_load;
 
 	// delay in timer-ticks to scale down CPU
@@ -163,7 +163,7 @@ struct cpufreq_nexus_tunables {
 	unsigned int lpr_down_elevation;
 
 	// load at which the cpugov decides to scale up
-	#define DEFAULT_UP_LOAD 50
+	#define DEFAULT_UP_LOAD 70
 	unsigned int up_load;
 
 	// delay in timer-ticks to scale up CPU
@@ -196,6 +196,7 @@ struct cpufreq_nexus_tunables {
 	// maximal frequency chosen by the cpugov
 	unsigned int freq_max;
 
+	#define DEFAULT_BOOST_FREQ 600000
 	// frequency used when governor is in boost-mode
 	unsigned int boost_freq;
 
@@ -219,6 +220,7 @@ struct cpufreq_nexus_tunables {
 	#define DEFAULT_RESET_STUCK_TIMESPAN DEFAULT_TIMER_RATE * 3
 	unsigned int reset_stuck_timespan;
 
+	#define DEFAULT_HISPEED_FREQ 800000
 	// hispeed-frequency which can only be exceeded after persting hispeed-load
 	unsigned int hispeed_freq;
 
@@ -231,7 +233,7 @@ struct cpufreq_nexus_tunables {
 	unsigned int hispeed_delay;
 
 	// indicates if hispeed-revalidation should work as power-efficient as possible
-	#define DEFAULT_HISPEED_POWER_EFFICIENT 0
+	#define DEFAULT_HISPEED_POWER_EFFICIENT 1
 	unsigned int hispeed_power_efficient;
 
 	// whether to enable load-stabilization
@@ -915,13 +917,13 @@ static int cpufreq_governor_nexus(struct cpufreq_policy *policy, unsigned int ev
 			tunables->io_is_busy = DEFAULT_IO_IS_BUSY;
 			tunables->freq_min = policy->min;
 			tunables->freq_max = policy->max;
-			tunables->boost_freq = policy->max;
+			tunables->boost_freq = DEFAULT_BOOST_FREQ;
 			tunables->boost = DEFAULT_BOOST;
 			tunables->boostpulse_duration = DEFAULT_BOOSTPULSE_DURATION;
 			tunables->power_efficient = DEFAULT_POWER_EFFICIENT;
 			tunables->frequency_step = DEFAULT_FREQUENCY_STEP;
 			tunables->reset_stuck_timespan = DEFAULT_RESET_STUCK_TIMESPAN;
-			tunables->hispeed_freq = policy->max;
+			tunables->hispeed_freq = DEFAULT_HISPEED_FREQ;
 			tunables->hispeed_load = DEFAULT_HISPEED_LOAD;
 			tunables->hispeed_delay = DEFAULT_HISPEED_DELAY;
 			tunables->hispeed_power_efficient = DEFAULT_HISPEED_POWER_EFFICIENT;
