@@ -82,7 +82,7 @@ static inline void offline_cpus(void)
 	unsigned int cpu;
 
 	for (cpu = NR_CPUS - 1; cpu > (suspend_cpu_num - 1); cpu--) {
-		if (cpu != 4 && cpu_online(cpu))
+		if (cpu_online(cpu))
 			cpu_down(cpu);
 	}
 	pr_info("%s: %d cpus were offlined\n",
@@ -330,7 +330,7 @@ static void __cpuinit tplug_work_fn(struct work_struct *work)
 			if (nr_cpu_online > min_core_online) {
 				if (!(i + 1) == 0) {
 					now[i + 1] = ktime_to_ms(ktime_get());
-					if (i!=3 && (now[i + 1] - last_time[i + 1]) >
+					if ((now[i + 1] - last_time[i + 1]) >
 							MIN_CPU_UP_TIME)
 						cpu_down(i + 1);
 				}
@@ -344,7 +344,7 @@ static void __cpuinit tplug_work_fn(struct work_struct *work)
 #ifdef CONFIG_STATE_NOTIFIER
 static void __ref thunderplug_suspend(void)
 {
-	if (isSuspended == false) {
+	if (!isSuspended) {
 		isSuspended = true;
 		cancel_delayed_work_sync(&tplug_work);
 		offline_cpus();
@@ -354,7 +354,7 @@ static void __ref thunderplug_suspend(void)
 
 static void __ref thunderplug_resume(void)
 {
-	if (isSuspended == true) {
+	if (isSuspended) {
 		isSuspended = false;
 		cpus_online_all();
 		pr_info("%s: resume\n", THUNDERPLUG);
@@ -411,7 +411,7 @@ static ssize_t __ref thunderplug_hp_enabled_store(struct kobject *kobj,
 			break;
 	}
 
-	if (tplug_hp_enabled == 1 && !last_val) {
+	if (tplug_hp_enabled && !last_val) {
 		pr_info("%s : Starting hotplug driver\n", THUNDERPLUG);
 		tplug_wq = alloc_workqueue("tplug",
 				WQ_HIGHPRI | WQ_FREEZABLE, 0);
@@ -424,17 +424,15 @@ static ssize_t __ref thunderplug_hp_enabled_store(struct kobject *kobj,
 		INIT_DELAYED_WORK(&tplug_work, tplug_work_fn);
 		queue_delayed_work_on(0, tplug_wq, &tplug_work,
 					msecs_to_jiffies(sampling_time));
-	} else if (tplug_hp_enabled == 1 && last_val == 1) {
+	} else if (tplug_hp_enabled && last_val) {
 		pr_info("%s : Already Working\n", THUNDERPLUG);
-	} else if (tplug_hp_enabled == 0 && last_val == 0) {
+	} else if (!tplug_hp_enabled && !last_val) {
 		pr_info("%s : Already Offline\n", THUNDERPLUG);
-	} else {
-		if (last_val) {
-			flush_workqueue(tplug_wq);
-			cancel_delayed_work_sync(&tplug_work);
-			destroy_workqueue(tplug_wq);
-			pr_info("%s : Stopping hotplug driver\n", THUNDERPLUG);
-		}
+	} else if (last_val) {
+		flush_workqueue(tplug_wq);
+		cancel_delayed_work_sync(&tplug_work);
+		destroy_workqueue(tplug_wq);
+		pr_info("%s : Stopping hotplug driver\n", THUNDERPLUG);
 	}
 
 	return count;
