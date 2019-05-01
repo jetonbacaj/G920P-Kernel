@@ -194,7 +194,7 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
 # Default value for CROSS_COMPILE is not to prefix executables
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 ARCH	:= arm64
-CROSS_COMPILE := /home/jeton/Downloads/kernel/toolchain/build-tools-gcc/aarch64-linux-gnu/bin/aarch64-linux-gnu-
+CROSS_COMPILE := /home/jeton/Desktop/pers/kernel/toolchain/build-tools-gcc/aarch64-linux-gnu/bin/aarch64-linux-gnu-
 #CROSS_COMPILE := /home/jeton/Downloads/kernel/toolchain/aarch64-linux-android/bin/aarch64-opt-linux-android-
 #CROSS_COMPILE := /home/jeton/Downloads/kernel/toolchain/android-ndk-r17b/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64/bin/aarch64-linux-android-
 #CROSS_COMPILE := /home/jeton/Downloads/kernel/toolchain/android-ndk-r11c/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64/bin/aarch64-linux-android-
@@ -246,29 +246,16 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 HOSTCC       = $(CCACHE) gcc
 HOSTCXX      = $(CCACHE) g++
 
-GRAPHITE   = -fgraphite-identity -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block -floop-flatten -floop-nest-optimize
-
-ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89
-HOSTCXXFLAGS = -O2
-endif
-ifdef CONFIG_CC_OPTIMIZE_DEFAULT
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89
-HOSTCXXFLAGS = -O2
-endif
-ifdef CONFIG_CC_OPTIMIZE_MORE
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O3 -fomit-frame-pointer -std=gnu89
-HOSTCXXFLAGS = -O3 fgcse-las
-endif
-ifdef CONFIG_CC_OPTIMIZE_FAST
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -Ofast -fomit-frame-pointer -std=gnu89
-HOSTCXXFLAGS = -Ofast
-endif
 ifdef CONFIG_CC_GRAPHITE_OPTIMIZATION
-HOSTCFLAGS   += $(GRAPHITE)
-HOSTCXXFLAGS += $(GRAPHITE)
+GRAPHITE     = -fgraphite -fgraphite-identity -floop-flatten -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block -floop-nest-optimize
+else
+GRAPHITE     =
 endif
 
+KERNEL_FLAGS = -g0 -DNDEBUG -pipe -fno-pic -O2 -mcpu=cortex-a57.cortex-a53+crypto+crc -ffast-math -ftree-vectorize
+
+HOSTCFLAGS   = $(GRAPHITE) -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89
+HOSTCXXFLAGS = $(GRAPHITE) $(KERNEL_FLAGS)
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
 
@@ -350,13 +337,9 @@ include $(srctree)/scripts/Kbuild.include
 # Make variables (CC, etc...)
 
 AS		= $(CROSS_COMPILE)as
-LD		= $(CROSS_COMPILE)ld
-CC		= $(CROSS_COMPILE)gcc
+LD		= $(CROSS_COMPILE)ld -O2 --strip-debug
+CC		= $(CCACHE) $(CROSS_COMPILE)gcc $(GRAPHITE)
 CPP		= $(CC) -E
-ifdef CONFIG_CC_GRAPHITE_OPTIMIZATION
-CC		+= $(GRAPHITE)
-CPP		+= $(GRAPHITE)
-endif
 AR		= $(CROSS_COMPILE)ar
 NM		= $(CROSS_COMPILE)nm
 STRIP		= $(CROSS_COMPILE)strip
@@ -381,15 +364,12 @@ endif
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-CFLAGS_MODULE   =
-AFLAGS_MODULE   =
-LDFLAGS_MODULE  =
-CFLAGS_KERNEL	=
-ifdef CONFIG_CC_GRAPHITE_OPTIMIZATION
+CFLAGS_MODULE	= $(GRAPHITE)
+AFLAGS_MODULE	= $(GRAPHITE)
+LDFLAGS_MODULE	= --strip-debug
 CFLAGS_KERNEL	= $(GRAPHITE)
-endif
-AFLAGS_KERNEL	=
-CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
+AFLAGS_KERNEL	= $(GRAPHITE)
+CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage -fno-tree-loop-im -Wno-maybe-uninitialized
 
 
 # Use USERINCLUDE when you must reference the UAPI directories only.
@@ -411,35 +391,35 @@ LINUXINCLUDE    := \
 
 KBUILD_CPPFLAGS := -D__KERNEL__
 
-KBUILD_CFLAGS   := -w -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
-		   -fno-strict-aliasing -fno-common \
-		   -Werror-implicit-function-declaration \
-		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
-		   -Wno-format-security \
-		   -fivopts -funswitch-loops -fpredictive-commoning -fgcse-after-reload \
-		   -fbranch-target-load-optimize -fsingle-precision-constant \
-		   -fno-delete-null-pointer-checks \
-		   -fdiagnostics-show-option -Werror \
-		   -pipe -fno-pic -O2 \
-		   -std=gnu89 $(call cc-option,-fno-PIE) \
-		   -fshort-wchar \
-		   -Wno-logical-not-parentheses \
-		   -mtune=cortex-a57.cortex-a53 \
-		   -mcpu=cortex-a57.cortex-a53+crc+crypto \
-		   -Wno-array-bounds \
-			-Wno-bool-operation \
-			-Wno-discarded-array-qualifiers \
-			-Wno-int-in-bool-context \
-			-Wno-format-overflow \
-			-Wno-format-truncation \
-			-Wno-logical-not-parentheses \
-			-Wno-memset-elt-size \
-			-Wno-misleading-indentation \
-			-Wno-nonnull \
-			-Wno-switch-unreachable \
-			-Wno-switch-bool \
-			-Wno-tautological-compare \
-			-Wno-unused-const-variable
+KBUILD_CFLAGS   := $(GRAPHITE) -w -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
+		-fno-strict-aliasing -fno-common \
+		-Werror-implicit-function-declaration \
+		-fmodulo-sched -fmodulo-sched-allow-regmoves \
+		-Wno-format-security \
+		-fivopts -funswitch-loops -fpredictive-commoning -fgcse-after-reload \
+		-fbranch-target-load-optimize -fsingle-precision-constant \
+		-fno-delete-null-pointer-checks \
+		-fdiagnostics-show-option -Werror \
+		$(KERNEL_FLAGS) \
+		$(call cc-option,-fno-PIE) \
+		-fshort-wchar \
+		-march=armv8-a+crc+crypto \
+		-mtune=cortex-a57.cortex-a53 \
+		-mcpu=cortex-a57.cortex-a53+crc+crypto -ffast-math -ftree-vectorize \
+		-Wno-array-bounds \
+		-Wno-bool-operation \
+		-Wno-discarded-array-qualifiers \
+		-Wno-int-in-bool-context \
+		-Wno-format-overflow \
+		-Wno-format-truncation \
+		-Wno-logical-not-parentheses \
+		-Wno-memset-elt-size \
+		-Wno-misleading-indentation \
+		-Wno-nonnull \
+		-Wno-switch-unreachable \
+		-Wno-switch-bool \
+		-Wno-tautological-compare \
+		-Wno-unused-const-variable
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
@@ -662,21 +642,13 @@ endif # $(dot-config)
 # Defaults to vmlinux, but the arch makefile usually adds further targets
 all: vmlinux
 
+KBUILD_CFLAGS	+= $(call cc-disable-warning,frame-address,)
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
-KBUILD_CFLAGS	+= -Os $(call cc-disable-warning,maybe-uninitialized,)
+KBUILD_CFLAGS	+= -Os -finline-functions
+else
+KBUILD_CFLAGS	+= -O2
 endif
-ifdef CONFIG_CC_OPTIMIZE_DEFAULT
-KBUILD_CFLAGS	+= -O2 -finline-functions -Wno-maybe-uninitialized
-endif
-ifdef CONFIG_CC_OPTIMIZE_MORE
-KBUILD_CFLAGS	+= -O3
-endif
-ifdef CONFIG_CC_OPTIMIZE_FAST
-KBUILD_CFLAGS	+= -Ofast $(call cc-disable-warning,maybe-uninitialized,)
-endif
-ifdef CONFIG_CC_GRAPHITE_OPTIMIZATION
-KBUILD_CFLAGS	+= $(GRAPHITE)
-endif
+KBUILD_CFLAGS += $(call cc-ifversion, -lt, 0409, $(call cc-disable-warning,maybe-uninitialized,))
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
 
@@ -702,9 +674,19 @@ ifndef CONFIG_CC_STACKPROTECTOR
 KBUILD_CFLAGS += $(call cc-option, -fno-stack-protector)
 endif
 
+# Needed to unbreak GCC 7.x and above
+KBUILD_CFLAGS   += $(call cc-option,-fno-store-merging,)
+
+# disallow errors like 'EXPORT_GPL(foo);' with missing header
+KBUILD_CFLAGS   += $(call cc-option,-Werror=implicit-int)
+
+# require functions to have arguments in prototypes, not empty 'int foo()'
+KBUILD_CFLAGS   += $(call cc-option,-Werror=strict-prototypes)
+
 # This warning generated too much noise in a regular build.
 # Use make W=1 to enable this warning (see scripts/Makefile.build)
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
+KBUILD_CFLAGS += $(call cc-disable-warning, unused-const-variable)
 
 ifdef CONFIG_FRAME_POINTER
 KBUILD_CFLAGS	+= -fno-omit-frame-pointer -fno-optimize-sibling-calls
@@ -771,6 +753,9 @@ KBUILD_CFLAGS   += $(call cc-option,-Werror=implicit-int)
 
 # require functions to have arguments in prototypes, not empty 'int foo()'
 KBUILD_CFLAGS   += $(call cc-option,-Werror=strict-prototypes)
+
+# Tell gcc to never replace conditional load with a non-conditional one
+KBUILD_CFLAGS	+= $(call cc-option,--param=allow-store-data-races=0)
 
 # use the deterministic mode of AR if available
 KBUILD_ARFLAGS := $(call ar-option,D)
