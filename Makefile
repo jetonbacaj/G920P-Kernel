@@ -194,7 +194,7 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
 # Default value for CROSS_COMPILE is not to prefix executables
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 ARCH	:= arm64
-CROSS_COMPILE := /home/jeton/Desktop/pers/kernel/toolchain/build-tools-gcc/aarch64-linux-gnu/bin/aarch64-linux-gnu-
+CROSS_COMPILE := /home/lubuntu/Desktop/build-tools-gcc/aarch64-linux-gnu/bin/aarch64-linux-gnu-
 #CROSS_COMPILE := /home/jeton/Downloads/kernel/toolchain/aarch64-linux-android/bin/aarch64-opt-linux-android-
 #CROSS_COMPILE := /home/jeton/Downloads/kernel/toolchain/android-ndk-r17b/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64/bin/aarch64-linux-android-
 #CROSS_COMPILE := /home/jeton/Downloads/kernel/toolchain/android-ndk-r11c/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64/bin/aarch64-linux-android-
@@ -252,7 +252,7 @@ else
 GRAPHITE     =
 endif
 
-KERNEL_FLAGS = -g0 -DNDEBUG -pipe -fno-pic -O2 -mcpu=cortex-a57.cortex-a53+crypto+crc -ffast-math -ftree-vectorize
+KERNEL_FLAGS = -g0 -DNDEBUG -pipe -fno-pic -O3 -mcpu=cortex-a57.cortex-a53+crypto+crc -ffast-math -ftree-vectorize
 
 HOSTCFLAGS   = $(GRAPHITE) -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89
 HOSTCXXFLAGS = $(GRAPHITE) $(KERNEL_FLAGS)
