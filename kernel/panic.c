@@ -131,6 +131,8 @@ void panic(const char *fmt, ...)
 		dump_stack();
 #endif
 
+	sysrq_sched_debug_show();
+
 	/*
 	 * If we have crashed and we have a crash kernel loaded let it handle
 	 * everything else.
@@ -508,3 +510,4 @@ static int __init oops_setup(char *s)
 	return 0;
 }
 early_param("oops", oops_setup);
+
