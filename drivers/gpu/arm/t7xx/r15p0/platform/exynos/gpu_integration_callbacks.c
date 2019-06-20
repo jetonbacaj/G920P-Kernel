@@ -157,7 +157,7 @@ void gpu_destroy_context(void *ctx)
 #endif
 		struct exynos_context *platform;
 		platform = (struct exynos_context *) kbdev->platform_context;
-#endif
+
 #ifdef CONFIG_MALI_DVFS
 		gpu_dvfs_boost_lock(GPU_DVFS_BOOST_UNSET);
 #endif
@@ -269,7 +269,6 @@ int gpu_vendor_dispatch(struct kbase_context *kctx, void * const args, u32 args_
 #endif
 			struct exynos_context *platform;
 			platform = (struct exynos_context *) kbdev->platform_context;
-#endif
 			if (!kctx->ctx_need_qos) {
 				kctx->ctx_need_qos = true;
 #ifdef CONFIG_SCHED_HMP
@@ -310,7 +309,7 @@ int gpu_vendor_dispatch(struct kbase_context *kctx, void * const args, u32 args_
 #endif
 			struct exynos_context *platform;
 			platform = (struct exynos_context *) kbdev->platform_context;
-#endif /* CONFIG_SCHED_HMP */
+
 			if (kctx->ctx_need_qos) {
 				kctx->ctx_need_qos = false;
 #ifdef CONFIG_SCHED_HMP
