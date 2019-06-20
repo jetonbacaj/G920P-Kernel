@@ -1,0 +1,4 @@
+build_kernel/G920P/Image
+build_kernel/G920P/*img
+fips_fmp_utils
+fmp_hmac.bin
