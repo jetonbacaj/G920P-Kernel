@@ -254,7 +254,7 @@ endif
 
 KERNEL_FLAGS = -g0 -DNDEBUG -pipe -fno-pic -O3 -mcpu=cortex-a57.cortex-a53+crypto+crc -ffast-math -ftree-vectorize
 
-HOSTCFLAGS   = $(GRAPHITE) -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89
+HOSTCFLAGS   = $(GRAPHITE) -Wall -Wmissing-prototypes -Wstrict-prototypes -O3 -fomit-frame-pointer -std=gnu89
 HOSTCXXFLAGS = $(GRAPHITE) $(KERNEL_FLAGS)
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -337,7 +337,7 @@ include $(srctree)/scripts/Kbuild.include
 # Make variables (CC, etc...)
 
 AS		= $(CROSS_COMPILE)as
-LD		= $(CROSS_COMPILE)ld -O2 --strip-debug
+LD		= $(CROSS_COMPILE)ld -O3 --strip-debug
 CC		= $(CCACHE) $(CROSS_COMPILE)gcc $(GRAPHITE)
 CPP		= $(CC) -E
 AR		= $(CROSS_COMPILE)ar
@@ -646,7 +646,7 @@ KBUILD_CFLAGS	+= $(call cc-disable-warning,frame-address,)
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os -finline-functions
 else
-KBUILD_CFLAGS	+= -O2
+KBUILD_CFLAGS	+= -O3 -finline-functions
 endif
 KBUILD_CFLAGS += $(call cc-ifversion, -lt, 0409, $(call cc-disable-warning,maybe-uninitialized,))
 
