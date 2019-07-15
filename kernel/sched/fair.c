@@ -2683,10 +2683,8 @@ static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
 			dequeue = 0;
 	}
 
-	if (!se) {
-		sched_update_nr_prod(cpu_of(rq), task_delta, false);
+	if (!se)
 		rq->nr_running -= task_delta;
-	}
 
 	cfs_rq->throttled = 1;
 	cfs_rq->throttled_clock = rq_clock(rq);
@@ -2732,10 +2730,8 @@ void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
 			break;
 	}
 
-	if (!se) {
-		sched_update_nr_prod(cpu_of(rq), task_delta, true);
+	if (!se)
 		rq->nr_running += task_delta;
-	}
 
 	/* determine whether we need to wake up potentially idle cpu */
 	if (rq->curr == rq->idle && rq->cfs.nr_running)
