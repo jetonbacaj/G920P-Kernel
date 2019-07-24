@@ -65,6 +65,7 @@ struct cpufreq_interactive_cpuinfo {
 	u64 max_freq_idle_start_time;
 	struct rw_semaphore enable_sem;
 	int governor_enabled;
+	struct cpufreq_interactive_tunables *cached_tunables;
 #ifdef CONFIG_PMU_COREMEM_RATIO
 	int region;
 	int prev_region;
@@ -661,6 +662,59 @@ static void exit_mode(struct cpufreq_interactive_tunables * tunables)
 	queue_work(mode_auto_change_minlock_wq, &mode_auto_change_minlock_work);
 }
 #endif
+
+static void save_tunables(struct cpufreq_policy *policy,
+                          struct cpufreq_interactive_tunables *tunables)
+{
+        int cpu;
+        struct cpufreq_interactive_cpuinfo *pcpu;
+
+        if (have_governor_per_policy())
+                cpu = cpumask_first(policy->related_cpus);
+        else
+                cpu = 0;
+
+        pcpu = &per_cpu(cpuinfo, cpu);
+        WARN_ON(pcpu->cached_tunables && pcpu->cached_tunables != tunables);
+        pcpu->cached_tunables = tunables;
+}
+
+static struct cpufreq_interactive_tunables *restore_tunables(
+						struct cpufreq_policy *policy)
+{
+	int cpu;
+	if (have_governor_per_policy())
+		cpu = cpumask_first(policy->related_cpus);
+	else
+		cpu = 0;
+	return per_cpu(cpuinfo, cpu).cached_tunables;
+}
+
+static struct cpufreq_interactive_tunables *alloc_tunable(
+                                        struct cpufreq_policy *policy)
+{
+        struct cpufreq_interactive_tunables *tunables;
+        tunables = kzalloc(sizeof(*tunables), GFP_KERNEL);
+        if (!tunables) {
+                pr_err("%s: POLICY_INIT: kzalloc failed\n", __func__);
+                return ERR_PTR(-ENOMEM);
+        }
+        tunables->above_hispeed_delay = default_above_hispeed_delay;
+        tunables->nabove_hispeed_delay =
+                ARRAY_SIZE(default_above_hispeed_delay);
+        tunables->go_hispeed_load = DEFAULT_GO_HISPEED_LOAD;
+        tunables->target_loads = default_target_loads;
+        tunables->ntarget_loads = ARRAY_SIZE(default_target_loads);
+        tunables->min_sample_time = DEFAULT_MIN_SAMPLE_TIME;
+        tunables->timer_rate = DEFAULT_TIMER_RATE;
+        tunables->boostpulse_duration_val = DEFAULT_MIN_SAMPLE_TIME;
+        tunables->timer_slack_val = DEFAULT_TIMER_SLACK;
+        spin_lock_init(&tunables->target_loads_lock);
+        spin_lock_init(&tunables->above_hispeed_delay_lock);
+
+        save_tunables(policy, tunables);
+        return tunables;
+}
 
 #define MAX_LOCAL_LOAD 100
 static void cpufreq_interactive_timer(unsigned long data)
@@ -2282,7 +2336,7 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 	else
 		tunables = common_tunables;
 
-	WARN_ON(!tunables && (event != CPUFREQ_GOV_POLICY_INIT));
+	BUG_ON(!tunables && (event != CPUFREQ_GOV_POLICY_INIT));
 
 	switch (event) {
 	case CPUFREQ_GOV_POLICY_INIT:
@@ -2294,67 +2348,28 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 			return 0;
 		}
 
-		tunables = kzalloc(sizeof(*tunables), GFP_KERNEL);
+		tunables = restore_tunables(policy);
 		if (!tunables) {
-			pr_err("%s: POLICY_INIT: kzalloc failed\n", __func__);
-			return -ENOMEM;
-		}
-
-		if (!tuned_parameters[policy->cpu]) {
-			tunables->above_hispeed_delay = default_above_hispeed_delay;
-			tunables->nabove_hispeed_delay =
-				ARRAY_SIZE(default_above_hispeed_delay);
-			tunables->go_hispeed_load = DEFAULT_GO_HISPEED_LOAD;
-			tunables->target_loads = default_target_loads;
-			tunables->ntarget_loads = ARRAY_SIZE(default_target_loads);
-			tunables->min_sample_time = DEFAULT_MIN_SAMPLE_TIME;
-			tunables->timer_rate = DEFAULT_TIMER_RATE;
-			tunables->boostpulse_duration_val = DEFAULT_MIN_SAMPLE_TIME;
-			tunables->timer_slack_val = DEFAULT_TIMER_SLACK;
-#ifdef CONFIG_MODE_AUTO_CHANGE
-			tunables->multi_enter_time = DEFAULT_MULTI_ENTER_TIME;
-			tunables->multi_enter_load = 4 * DEFAULT_TARGET_LOAD;
-			tunables->multi_exit_time = DEFAULT_MULTI_EXIT_TIME;
-			tunables->multi_exit_load = 4 * DEFAULT_TARGET_LOAD;
-			tunables->single_enter_time = DEFAULT_SINGLE_ENTER_TIME;
-			tunables->single_enter_load = DEFAULT_TARGET_LOAD;
-			tunables->single_exit_time = DEFAULT_SINGLE_EXIT_TIME;
-			tunables->single_exit_load = DEFAULT_TARGET_LOAD;
-			tunables->single_cluster0_min_freq = DEFAULT_SINGLE_CLUSTER0_MIN_FREQ;
-			tunables->multi_cluster0_min_freq = DEFAULT_MULTI_CLUSTER0_MIN_FREQ;
-
-			cpufreq_param_set_init(tunables);
-#endif
-#ifdef CONFIG_PMU_COREMEM_RATIO
-			tunables->region_last_stat = jiffies;
-#endif
-		} else {
-			memcpy(tunables, tuned_parameters[policy->cpu], sizeof(*tunables));
-			kfree(tuned_parameters[policy->cpu]);
+			tunables = alloc_tunable(policy);
+			if (IS_ERR(tunables))
+				return PTR_ERR(tunables);
 		}
 		tunables->usage_count = 1;
-
-		/* update handle for get cpufreq_policy */
-		tunables->policy = &policy->policy;
-
-		spin_lock_init(&tunables->target_loads_lock);
-		spin_lock_init(&tunables->above_hispeed_delay_lock);
-#ifdef CONFIG_MODE_AUTO_CHANGE
-		spin_lock_init(&tunables->mode_lock);
-		spin_lock_init(&tunables->param_index_lock);
-#endif
-
 		policy->governor_data = tunables;
-		if (!have_governor_per_policy())
+		if (!have_governor_per_policy()) {
+			//WARN_ON(cpufreq_get_global_kobject());
 			common_tunables = tunables;
+		}
 
 		rc = sysfs_create_group(get_governor_parent_kobj(policy),
 				get_sysfs_attr());
 		if (rc) {
 			kfree(tunables);
 			policy->governor_data = NULL;
-			if (!have_governor_per_policy())
+			if (!have_governor_per_policy()) {
 				common_tunables = NULL;
+				//cpufreq_put_global_kobject();
+			}
 			return rc;
 		}
 
@@ -2383,13 +2398,8 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 			sysfs_remove_group(get_governor_parent_kobj(policy),
 					get_sysfs_attr());
 
-			tuned_parameters[policy->cpu] = kzalloc(sizeof(*tunables), GFP_KERNEL);
-			if (!tuned_parameters[policy->cpu]) {
-				pr_err("%s: POLICY_EXIT: kzalloc failed\n", __func__);
-				return -ENOMEM;
-			}
-			memcpy(tuned_parameters[policy->cpu], tunables, sizeof(*tunables));
-			kfree(tunables);
+			if (!have_governor_per_policy())
+				//cpufreq_put_global_kobject();
 			common_tunables = NULL;
 		}
 
@@ -2832,7 +2842,16 @@ module_init(cpufreq_interactive_init);
 
 static void __exit cpufreq_interactive_exit(void)
 {
+	int cpu;
+	struct cpufreq_interactive_cpuinfo *pcpu;
 	cpufreq_unregister_governor(&cpufreq_gov_interactive);
+	//kthread_stop(speedchange_task);
+	//put_task_struct(speedchange_task);
+	for_each_possible_cpu(cpu) {
+		pcpu = &per_cpu(cpuinfo, cpu);
+		kfree(pcpu->cached_tunables);
+		pcpu->cached_tunables = NULL;
+	}
 }
 
 module_exit(cpufreq_interactive_exit);
