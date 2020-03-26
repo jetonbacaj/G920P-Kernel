@@ -194,8 +194,12 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
 # Default value for CROSS_COMPILE is not to prefix executables
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 ARCH	:= arm64
-CROSS_COMPILE := /home/lubuntu/Desktop/build-tools-gcc/aarch64-linux-gnu/bin/aarch64-linux-gnu-
-#CROSS_COMPILE := /home/jeton/Downloads/kernel/toolchain/aarch64-linux-android/bin/aarch64-opt-linux-android-
+#CROSS_COMPILE := /home/lubuntu/Desktop/build-tools-gcc/aarch64-linux-gnu/bin/aarch64-linux-gnu-
+
+CROSS_COMPILE := /home/ubuntu/Desktop/build-tools-gcc/aarch64-linux-gnu/bin/aarch64-linux-gnu-
+
+#CROSS_COMPILE := /home/ubuntu/Desktop/android-ndk-r21/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64/bin/aarch64-linux-android-
+
 #CROSS_COMPILE := /home/jeton/Downloads/kernel/toolchain/android-ndk-r17b/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64/bin/aarch64-linux-android-
 #CROSS_COMPILE := /home/jeton/Downloads/kernel/toolchain/android-ndk-r11c/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64/bin/aarch64-linux-android-
 

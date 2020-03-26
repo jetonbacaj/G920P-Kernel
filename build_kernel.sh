@@ -55,6 +55,10 @@ if [ -e $BK/$TARGET/Image ]; then
 	rm -rf $BK/$TARGET/Image
 fi;
 
+if [ -e $BK/$TARGET/mydt.img ]; then
+	rm -rf $BK/$TARGET/mydt.img
+fi;
+
 echo "Done"
 
 ####################################### COMPILE IMAGES #######################################
@@ -63,9 +67,9 @@ echo
 echo "${bldcya}***** Compiling kernel *****${txtrst}"
 
 if [ $USER != "root" ]; then
-	make CONFIG_DEBUG_SECTION_MISMATCH=y -j8 Image ARCH=arm64
+	make CONFIG_DEBUG_SECTION_MISMATCH=y -j4 Image ARCH=arm64
 else
-	make -j8 Image ARCH=arm64
+	make -j4 Image ARCH=arm64
 fi;
 
 if [ -e $KERNELDIR/arch/arm64/boot/Image ]; then
@@ -82,13 +86,23 @@ fi;
 echo
 echo "Done"
 
+#########
+echo
+echo "${bldcya}***** Make dt.img *****${txtrst}"
+echo
+#./tools/dtbtool -o ${KERNELDIR}/$BK/$TARGET/mydt.img -s 2048 -p ./scripts/dtc/ $DTS/ | sleep 1
+./build_kernel/dtbtool -o ${KERNELDIR}/$BK/$TARGET/mydt.img -s 2048 -p ./scripts/dtc/ arch/arm64/boot/dts/
+echo
+echo "Done"
+
+
 ############ BOOT.IMG GENERATION #####################################
 
 echo
 echo "${bldcya}***** Make boot.img *****${txtrst}"
 echo
 cd ${KERNELDIR}/$BK
-./mkbootimg --kernel ./$TARGET/Image --dt ./$TARGET/dt.img --ramdisk ./$TARGET/ramdisk.gz --base 0x10000000 --kernel_offset 0x00008000 --ramdisk_offset 0x01000000 --tags_offset 0x00000100 --pagesize 2048 -o ./$TARGET/boot.img
+./mkbootimg --kernel ./$TARGET/Image --dt ./$TARGET/mydt.img --ramdisk ./$TARGET/ramdisk.gz --base 0x10000000 --kernel_offset 0x00008000 --ramdisk_offset 0x01000000 --tags_offset 0x00000100 --pagesize 2048 -o ./$TARGET/boot.img
 
 echo -n "SEANDROIDENFORCE" >> ./$TARGET/boot.img
 
